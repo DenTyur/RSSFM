@@ -11,32 +11,34 @@ src_dir = os.path.abspath(os.path.join(basedir, ".."))
 
 x = np.load(src_dir + "/arrays_saved/x0.npy")
 y = np.load(src_dir + "/arrays_saved/x1.npy")
-t = np.load(src_dir + "/arrays_saved/time_evol/t.npy")
+t = np.load(src_dir + "/arrays_saved/time_evol/volkov/t.npy")
 
 X, Y = np.meshgrid(x, y, indexing="ij")
 
-if not os.path.exists(src_dir + "/imgs/time_evol/psi_x"):
-    os.makedirs(src_dir + "/imgs/time_evol/psi_x")
+if not os.path.exists(src_dir + "/imgs/time_evol/volkov/psi_x"):
+    os.makedirs(src_dir + "/imgs/time_evol/volkov/psi_x")
 
 fig, axs = plt.subplots(ncols=1, nrows=1, figsize=(8, 8), layout="constrained")
 
 for i in range(len(t)):
     ts = time.time()
-    psi = np.load(src_dir + f"/arrays_saved/time_evol/psi_x/psi_x_t_{i}.npy")
+    psi = np.load(src_dir + f"/arrays_saved/time_evol/volkov/psi_x_t_{i}.npy")
     axs.set(
         aspect="equal",
-        title=f"external |psi(x, y)|^2 step={i} of {len(t)}; t = {t[i]:.{5}f} a.u.",
+        title=f"|volkov(x, y)|^2 step={i} of {len(t)}; t = {t[i]:.{5}f} a.u.",
     )
     b = axs.pcolormesh(
         X,
         Y,
-        np.abs(psi) ** 2,
+        # np.abs(psi) ** 2,
+        psi.real,
         cmap=cm.jet,
         shading="auto",
-        norm=LogNorm(vmin=1e-8, vmax=1),
+        norm=LogNorm(vmin=1e-2, vmax=1),
     )
+    print(np.min(np.abs(psi) ** 2), np.max(np.abs(psi) ** 2))
     cb = plt.colorbar(b, ax=axs)
-    fig.savefig(src_dir + f"/imgs/time_evol/psi_x/psi_x_t_{i}.png")
+    fig.savefig(src_dir + f"/imgs/time_evol/volkov/psi_x_t_{i}.png")
     axs.clear()
     cb.remove()
     gc.collect()

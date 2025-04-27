@@ -2,28 +2,28 @@ extern crate fstrings;
 
 use ndarray::prelude::*;
 use ndarray_npy::{ReadNpyError, ReadNpyExt, WriteNpyError, WriteNpyExt};
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use std::fs::File;
 use std::io::BufWriter;
 
 pub struct Point2e1D {
-    pub x1: f64,
-    pub x2: f64,
+    pub x1: f32,
+    pub x2: f32,
 }
 
 #[derive(Debug, Clone)]
 pub struct Tspace {
     // параметры временной сетки
-    pub t0: f64,
-    pub dt: f64,
+    pub t0: f32,
+    pub dt: f32,
     pub n_steps: usize,
     pub nt: usize,
-    pub current: f64,
-    pub grid: Array<f64, Ix1>,
+    pub current: f32,
+    pub grid: Array<f32, Ix1>,
 }
 
 impl Tspace {
-    pub fn new(t0: f64, dt: f64, n_steps: usize, nt: usize) -> Self {
+    pub fn new(t0: f32, dt: f32, n_steps: usize, nt: usize) -> Self {
         Self {
             t0,
             dt,
@@ -31,21 +31,21 @@ impl Tspace {
             nt,
             current: t0,
             // костыль
-            grid: Array::linspace(t0, t0 + dt * n_steps as f64 * (nt - 1) as f64, nt),
+            grid: Array::linspace(t0, t0 + dt * n_steps as f32 * (nt - 1) as f32, nt),
         }
     }
 
-    pub fn t_step(&self) -> f64 {
+    pub fn t_step(&self) -> f32 {
         // возвращает временной шаг срезов волновой функции
-        self.dt * self.n_steps as f64
+        self.dt * self.n_steps as f32
     }
 
-    pub fn last(&self) -> f64 {
+    pub fn last(&self) -> f32 {
         // возвращает последний элемент сетки временных срезов
-        self.t0 + self.t_step() * (self.nt - 1) as f64
+        self.t0 + self.t_step() * (self.nt - 1) as f32
     }
 
-    pub fn get_grid(&self) -> Array<f64, Ix1> {
+    pub fn get_grid(&self) -> Array<f32, Ix1> {
         // возвращает временную сетку срезов
         Array::linspace(self.t0, self.last(), self.nt)
     }
@@ -63,15 +63,15 @@ pub struct Xspace {
     // размерность пространства
     pub dim: usize,
     // параметры координатной сетки
-    pub x0: Vec<f64>,
-    pub dx: Vec<f64>,
+    pub x0: Vec<f32>,
+    pub dx: Vec<f32>,
     pub n: Vec<usize>,
     // сетка
-    pub grid: Vec<Array<f64, Ix1>>,
+    pub grid: Vec<Array<f32, Ix1>>,
 }
 
 impl Xspace {
-    pub fn new(x0: Vec<f64>, dx: Vec<f64>, n: Vec<usize>) -> Self {
+    pub fn new(x0: Vec<f32>, dx: Vec<f32>, n: Vec<usize>) -> Self {
         // Как записать assert(x0.len()==dx.len()==n.len())?
         assert_eq!(x0.len(), dx.len(), "Dimension Error");
         assert_eq!(n.len(), dx.len(), "Dimension Error");
@@ -82,7 +82,7 @@ impl Xspace {
             n: n.clone(),
             grid: (0..x0.len()) // тоже костыль! как это сделать через функцию?
                 .into_iter()
-                .map(|i| Array::linspace(x0[i], x0[i] + dx[i] * (n[i] - 1) as f64, n[i]))
+                .map(|i| Array::linspace(x0[i], x0[i] + dx[i] * (n[i] - 1) as f32, n[i]))
                 // переписать через x0 + dx*arrange(N)
                 .collect(),
         }
@@ -104,15 +104,15 @@ impl Xspace {
         //
         // dim - размерность пространства.
 
-        let mut x: Vec<Array<f64, Ix1>> = Vec::new();
-        let mut x0: Vec<f64> = Vec::new();
-        let mut dx: Vec<f64> = Vec::new();
+        let mut x: Vec<Array<f32, Ix1>> = Vec::new();
+        let mut x0: Vec<f32> = Vec::new();
+        let mut dx: Vec<f32> = Vec::new();
         let mut n: Vec<usize> = Vec::new();
 
         for i in 0..dim {
             let x_path = String::from(dir_path) + f!("/x{i}.npy").as_str();
             let reader = File::open(x_path).unwrap();
-            x.push(Array1::<f64>::read_npy(reader).unwrap());
+            x.push(Array1::<f32>::read_npy(reader).unwrap());
             x0.push(x[i][[0]]);
             dx.push(x[i][[1]] - x[i][[0]]);
             n.push(x[i].len());
@@ -148,11 +148,11 @@ pub struct Pspace {
     // размерность пространства
     pub dim: usize,
     // параметры импульсной сетки
-    pub p0: Vec<f64>,
-    pub dp: Vec<f64>,
+    pub p0: Vec<f32>,
+    pub dp: Vec<f32>,
     pub n: Vec<usize>,
     // сетка
-    pub grid: Vec<Array<f64, Ix1>>,
+    pub grid: Vec<Array<f32, Ix1>>,
 }
 
 impl Pspace {
@@ -161,7 +161,7 @@ impl Pspace {
         let dp =
             x.n.iter()
                 .zip(x.dx.iter())
-                .map(|(&n, &dx)| 2. * PI / (n as f64 * dx))
+                .map(|(&n, &dx)| 2. * PI / (n as f32 * dx))
                 .collect::<Vec<_>>();
         Self {
             dim: x.dim.clone(),
@@ -170,12 +170,12 @@ impl Pspace {
             n: x.n.clone(),
             grid: Vec::from_iter(0..p0.len()) // тоже костыль!
                 .iter()
-                .map(|&i| Array::linspace(p0[i], p0[i] + dp[i] * (x.n[i] - 1) as f64, x.n[i]))
+                .map(|&i| Array::linspace(p0[i], p0[i] + dp[i] * (x.n[i] - 1) as f32, x.n[i]))
                 .collect(),
         }
     }
 
-    pub fn point_abs_squared(&self, index: (usize, usize)) -> f64 {
+    pub fn point_abs_squared(&self, index: (usize, usize)) -> f32 {
         self.grid[0][[index.0]].powi(2) + self.grid[1][[index.1]].powi(2)
     }
 

@@ -1,169 +1,247 @@
 use crate::field;
+use crate::gauge;
 use crate::parameters;
 use crate::potentials;
 use crate::wave_function;
 use field::Field2D;
+use gauge::{LenthGauge, VelocityGauge};
 use itertools::multizip;
 use ndarray::prelude::*;
 use ndrustfft::{ndfft_par, ndifft_par, FftHandler};
 use num_complex::Complex;
 use parameters::*;
-use potentials::AtomicPotential;
+use potentials::{br_1e2d_external, AtomicPotential};
 use rayon::prelude::*;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use wave_function::WaveFunction;
+// Чем более непонятным становится код, тем он круче! (с)
+// Всратость не есть недостаток!
 
-pub fn time_step_evol(
-    fft: &mut FftMaker2d,
-    psi: &mut WaveFunction,
-    field: &Field2D,
-    u: &AtomicPotential,
-    x: &Xspace,
-    p: &Pspace,
-    t: &mut Tspace,
-) {
-    modify_psi(psi, x, p);
-    x_evol_half(psi, u, t, field, x);
+type F = f32;
+type C = Complex<f32>;
+const I: C = Complex::I;
 
-    for _i in 0..t.n_steps - 1 {
-        fft.do_fft(psi);
-        // Можно оптимизировать p_evol
-        p_evol(psi, p, t.dt);
-        fft.do_ifft(psi);
-        x_evol(psi, u, t, field, x);
-        t.current += t.dt;
+pub trait EvolutionSSFM {
+    // Гауге:)
+    // От калибровки зависят только эволюции в импульсном и координатном пространстве
+    fn x_evol_half(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace);
+    fn x_evol(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace);
+    fn p_evol(&self, psi: &mut WaveFunction, p: &Pspace, t: &Tspace);
+}
+
+impl<'a> EvolutionSSFM for VelocityGauge<'a> {
+    fn x_evol_half(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace) {
+        // эволюция в координатном пространстве на половину временного шага
+        multizip((psi.psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            // Соединяем первый индекс psi с x
+            .par_bridge() // по нулевой оси делаем цикл параллельным
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                    // Соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // Решил, что лучше вычислять по факту потенциал, а не хранить его массив в
+                        // памяти. Меньше места занимает, а скорость такая же.
+                        let atomic_potential_elem = br_1e2d_external(*x_point, *y_point);
+                        // эволюция psi
+                        *psi_elem *= (-I * 0.5 * t.dt * atomic_potential_elem).exp();
+                    });
+            });
     }
 
-    fft.do_fft(psi);
-    p_evol(psi, p, t.dt);
-    fft.do_ifft(psi);
-    x_evol_half(psi, u, t, field, x);
-    demodify_psi(psi, x, p);
-    t.current += t.dt;
+    fn x_evol(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace) {
+        // эволюция в координатном пространстве на полный временной шаг
+        multizip((psi.psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            // Соединяем первый индекс psi с x
+            .par_bridge() // по нулевой оси делаем цикл параллельным
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                    // Соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // Решил, что лучше вычислять по факту потенциал, а не хранить его массив в
+                        // памяти. Меньше места занимает, а скорость такая же.
+                        let atomic_potential_elem = br_1e2d_external(*x_point, *y_point);
+                        // эволюция psi
+                        *psi_elem *= (-I * t.dt * atomic_potential_elem).exp();
+                    });
+            });
+    }
+
+    fn p_evol(&self, psi: &mut WaveFunction, p: &Pspace, t: &Tspace) {
+        // эволюция в импульсном пространстве
+        let vec_pot = self.field.vec_pot(t.current);
+
+        multizip((psi.psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+            // соединяем первый индекс psi_p с px
+            .par_bridge()
+            .for_each(|(mut psi_row, px)| {
+                psi_row
+                    .iter_mut()
+                    .zip(p.grid[1].iter())
+                    // соединяем второй индекс psi_p с py
+                    .for_each(|(psi_elem, py)| {
+                        *psi_elem *= (-I
+                            * t.dt
+                            * (0.5 * px * px + 0.5 * py * py + vec_pot[0] * px + vec_pot[1] * py))
+                            .exp();
+                    });
+            });
+    }
 }
 
-pub fn x_evol_half(
-    psi: &mut WaveFunction,
-    atomic_potential: &AtomicPotential,
-    t: &Tspace,
-    field: &Field2D,
-    x: &Xspace,
-) {
-    // эволюция в координатном пространстве на половину временного шага
-    let j = Complex::I;
+impl<'a> EvolutionSSFM for LenthGauge<'a> {
+    fn x_evol_half(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace) {
+        // эволюция в координатном пространстве на половину временного шага
 
-    let electric_field_potential = field.potential_as_array(t.current, x);
+        let electric_field = self.field.electric_field_time_dependence(t.current);
 
-    multizip((
-        psi.psi.axis_iter_mut(Axis(0)),
-        atomic_potential.potential.axis_iter(Axis(0)),
-        electric_field_potential[0].iter(),
-    ))
-    .par_bridge()
-    .for_each(|(mut psi_row, atomic_potential_row, field_potential_0ax)| {
-        multizip((
-            psi_row.iter_mut(),
-            atomic_potential_row.iter(),
-            electric_field_potential[1].iter(),
-        ))
-        .for_each(|(psi_elem, atomic_potential_elem, field_potential_1ax)| {
-            *psi_elem *= (-j
-                * 0.5
-                * t.dt
-                * (atomic_potential_elem - field_potential_0ax - field_potential_1ax))
-                .exp();
-        });
-    });
+        multizip((psi.psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            // Соединяем первый индекс psi с x
+            .par_bridge() // по нулевой оси делаем цикл параллельным
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                    // Соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // Решил, что лучше вычислять по факту потенциал, а не хранить его массив в
+                        // памяти. Меньше места занимает, а скорость такая же.
+                        let atomic_potential_elem = br_1e2d_external(*x_point, *y_point);
+                        // эволюция psi
+                        *psi_elem *= (-I
+                            * 0.5
+                            * t.dt
+                            * (atomic_potential_elem
+                                + electric_field[0] * x_point // заряд у электрона минус, поэтому
+                            // здесь плюс
+                                + electric_field[1] * y_point))
+                            .exp();
+                    });
+            });
+    }
+
+    fn x_evol(&self, psi: &mut WaveFunction, x: &Xspace, t: &Tspace) {
+        // эволюция в координатном пространстве на полный временной шаг
+        let electric_field = self.field.electric_field_time_dependence(t.current);
+
+        multizip((psi.psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            // Соединяем первый индекс psi с x
+            .par_bridge() // по нулевой оси делаем цикл параллельным
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                    // Соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // Решил, что лучше вычислять по факту потенциал, а не хранить его массив в
+                        // памяти. Меньше места занимает, а скорость такая же.
+                        let atomic_potential_elem = br_1e2d_external(*x_point, *y_point);
+                        // эволюция psi
+                        *psi_elem *= (-I
+                            * t.dt
+                            * (atomic_potential_elem
+                                + electric_field[0] * x_point // заряд у электрона минус, поэтому
+                            // здесь плюс
+                                + electric_field[1] * y_point))
+                            .exp();
+                    });
+            });
+    }
+
+    fn p_evol(&self, psi: &mut WaveFunction, p: &Pspace, t: &Tspace) {
+        // эволюция в импульсном пространстве
+        multizip((psi.psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+            // соединяем первый индекс psi_p с px
+            .par_bridge()
+            .for_each(|(mut psi_row, px)| {
+                psi_row
+                    .iter_mut()
+                    .zip(p.grid[1].iter())
+                    // соединяем второй индекс psi_p с py
+                    .for_each(|(psi_elem, py)| {
+                        *psi_elem *= (-I * t.dt * (0.5 * px * px + 0.5 * py * py)).exp();
+                    });
+            });
+    }
 }
 
-pub fn x_evol(
-    psi: &mut WaveFunction,
-    atomic_potential: &AtomicPotential,
-    t: &Tspace,
-    field: &Field2D,
-    x: &Xspace,
-) {
-    // эволюция в координатном пространстве на половину временного шага
-    let j = Complex::I;
-
-    let electric_field_potential = field.potential_as_array(t.current, x);
-
-    multizip((
-        psi.psi.axis_iter_mut(Axis(0)),
-        atomic_potential.potential.axis_iter(Axis(0)),
-        electric_field_potential[0].iter(),
-    ))
-    .par_bridge()
-    .for_each(|(mut psi_row, atomic_potential_row, field_potential_0ax)| {
-        multizip((
-            psi_row.iter_mut(),
-            atomic_potential_row.iter(),
-            electric_field_potential[1].iter(),
-        ))
-        .for_each(|(psi_elem, atomic_potential_elem, field_potential_1ax)| {
-            *psi_elem *=
-                (-j * t.dt * (atomic_potential_elem - field_potential_0ax - field_potential_1ax))
-                    .exp();
-        });
-    });
+pub struct SSFM<'a, G: EvolutionSSFM> {
+    gauge: &'a G,
+    fft: FftMaker2d,
+    x: &'a Xspace,
+    p: &'a Pspace,
 }
 
-pub fn p_evol(psi: &mut WaveFunction, p: &Pspace, dt: f64) {
-    // эволюция в импульсном пространстве
-    let j = Complex::I;
-    psi.psi
-        .axis_iter_mut(Axis(0))
-        .zip(p.grid[0].iter())
-        .par_bridge()
-        .for_each(|(mut psi_row, px_i)| {
-            psi_row
-                .iter_mut()
-                .zip(p.grid[1].iter())
-                .for_each(|(psi_elem, py_k)| {
-                    *psi_elem *= (-j * 0.5 * dt * (px_i.powi(2) + py_k.powi(2))).exp();
-                });
-        });
-}
+impl<'a, G: EvolutionSSFM> SSFM<'a, G> {
+    pub fn new(gauge: &'a G, x: &'a Xspace, p: &'a Pspace) -> Self {
+        let fft = FftMaker2d::new(&x.n);
+        Self { gauge, fft, x, p }
+    }
 
-pub fn demodify_psi(psi: &mut WaveFunction, x: &Xspace, p: &Pspace) {
-    // демодифицирует "psi для DFT" обратно в psi
-    let j = Complex::I;
-    psi.psi
-        .axis_iter_mut(Axis(0))
-        .zip(x.grid[0].iter())
-        .par_bridge()
-        .for_each(|(mut psi_row, x_i)| {
-            psi_row
-                .iter_mut()
-                .zip(x.grid[1].iter())
-                .for_each(|(psi_elem, y_k)| {
-                    *psi_elem *= (2. * PI) / (x.dx[0] * x.dx[1])
-                        * (j * (p.p0[0] * x_i + p.p0[1] * y_k)).exp();
-                })
-        });
-}
+    pub fn demodify_psi(&mut self, psi: &mut WaveFunction) {
+        // демодифицирует "psi для DFT" обратно в psi
+        multizip((psi.psi.axis_iter_mut(Axis(0)), self.x.grid[0].iter()))
+            // соединяем первый индекс psi с x
+            .par_bridge()
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), self.x.grid[1].iter()))
+                    // соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // демодифицируем psi
+                        *psi_elem *= (2. * PI) / (self.x.dx[0] * self.x.dx[1])
+                            * (I * (self.p.p0[0] * x_point + self.p.p0[1] * y_point)).exp();
+                    });
+            });
+    }
 
-pub fn modify_psi(psi: &mut WaveFunction, x: &Xspace, p: &Pspace) {
-    // модифицирует psi для DFT (в нашем сучае FFT)
-    let j = Complex::I;
-    psi.psi
-        .axis_iter_mut(Axis(0))
-        .zip(x.grid[0].iter())
-        .par_bridge()
-        .for_each(|(mut psi_row, x_i)| {
-            psi_row
-                .iter_mut()
-                .zip(x.grid[1].iter())
-                .for_each(|(psi_elem, y_k)| {
-                    *psi_elem *= x.dx[0] * x.dx[1] / (2. * PI)
-                        * (-j * (p.p0[0] * x_i + p.p0[1] * y_k)).exp();
-                })
-        });
+    pub fn modify_psi(&mut self, psi: &mut WaveFunction) {
+        // модифицирует psi для FFT
+        multizip((psi.psi.axis_iter_mut(Axis(0)), self.x.grid[0].iter()))
+            // соединяем первый индекс psi с x
+            .par_bridge()
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), self.x.grid[1].iter()))
+                    // соединяем второй индекс psi с y
+                    .for_each(|(psi_elem, y_point)| {
+                        // модифицируем psi
+                        *psi_elem *= self.x.dx[0] * self.x.dx[1] / (2. * PI)
+                            * (-I * (self.p.p0[0] * x_point + self.p.p0[1] * *y_point)).exp();
+                    });
+            });
+    }
+
+    pub fn time_step_evol(
+        &mut self,
+        psi: &mut WaveFunction,
+        t: &mut Tspace,
+        psi_x_save_path: Option<&str>,
+        psi_p_save_path: Option<&str>,
+    ) {
+        if let Some(path) = psi_x_save_path {
+            psi.save_psi(path).unwrap();
+        }
+        self.modify_psi(psi);
+        self.gauge.x_evol_half(psi, self.x, t);
+
+        for _i in 0..t.n_steps - 1 {
+            self.fft.do_fft(psi);
+            // Можно оптимизировать p_evol
+            self.gauge.p_evol(psi, self.p, t);
+            self.fft.do_ifft(psi);
+            self.gauge.x_evol(psi, self.x, t);
+            t.current += t.dt;
+        }
+
+        self.fft.do_fft(psi);
+        self.gauge.p_evol(psi, self.p, t);
+        if let Some(path) = psi_p_save_path {
+            psi.save_psi(path).unwrap();
+        }
+        self.fft.do_ifft(psi);
+        self.gauge.x_evol_half(psi, self.x, t);
+        self.demodify_psi(psi);
+        t.current += t.dt;
+    }
 }
 
 pub struct FftMaker2d {
-    pub handler: Vec<FftHandler<f64>>,
-    pub psi_temp: Array2<Complex<f64>>,
+    pub handler: Vec<FftHandler<F>>,
+    pub psi_temp: Array2<C>,
 }
 
 impl FftMaker2d {
