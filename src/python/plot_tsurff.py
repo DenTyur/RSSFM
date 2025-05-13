@@ -33,7 +33,7 @@ b = axs.pcolormesh(
     np.abs(psi) ** 2,
     cmap=cm.jet,
     shading="auto",
-    norm=LogNorm(),  # (vmin=1e-5, vmax=1),
+    norm=LogNorm(vmin=1e-5, vmax=1),
 )
 cb = plt.colorbar(b, ax=axs)
 fig.savefig(src_dir + "/imgs/time_evol/tsurff/pwf_tsurff.png")

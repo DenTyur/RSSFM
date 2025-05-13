@@ -6,11 +6,14 @@ mod field;
 mod flow;
 mod gauge;
 mod heatmap;
+mod logcolormap;
+mod macros;
 mod parameters;
 mod potentials;
 mod tsurff;
 mod volkov;
 mod wave_function;
+use crate::macros::measure_time;
 use evolution::{EvolutionSSFM, SSFM};
 use field::Field2D;
 use flow::*;
@@ -19,7 +22,7 @@ use ndarray::prelude::*;
 use ndarray_npy::{ReadNpyError, ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use parameters::{Pspace, Tspace, Xspace};
-use potentials::AtomicPotential;
+use potentials::{absorbing_potential, br_1e2d_external, AtomicPotential};
 use rayon::prelude::*;
 use std::f32::consts::PI;
 use std::fs::File;
@@ -39,7 +42,7 @@ fn main() {
     let psi_path = "arrays_saved/psi_initial.npy";
 
     // задаем параметры временной сетки
-    let mut t = Tspace::new(0., 0.2, 100, 30);
+    let mut t = Tspace::new(0., 0.2, 1, 2200);
     t.save_grid("arrays_saved/time_evol/t.npy").unwrap();
 
     // задаем координатную сетку
@@ -57,18 +60,17 @@ fn main() {
         x_envelop: 30.0001,
     };
     // указываем калибровку поля
-    let gauge = LenthGauge::new(&field);
+    let gauge = VelocityGauge::new(&field);
 
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let mut ssfm = SSFM::new(&gauge, &x, &p);
-
-    // t-surff
-    // let surf = Circle::new(25.0, 50);
-    // let mut tsurff = Tsurff::new(gauge, surf, &x, &p);
+    let mut ssfm = SSFM::new(&gauge, &x, &p, br_1e2d_external, absorbing_potential);
 
     // создаем структуру для потока вероятности через поверхность
     let surface = Circle::new(25.0, 50);
     let mut flow = Flow::new(&gauge, &surface);
+
+    // t-surff
+    let mut tsurff = Tsurff::new(&gauge, &surface, &x, &p, Some(3.0));
 
     // генерация начальной волновой функции psi
     let mut psi = WaveFunction::init_from_file(psi_path, &x);
@@ -90,27 +92,37 @@ fn main() {
         //============================================================
         //                       SSFM
         //============================================================
-        let time_ssfm = Instant::now();
-        ssfm.time_step_evol(
-            &mut psi,
-            &mut t,
-            Some(f!("arrays_saved/time_evol/psi_x_lg/psi_x_t_{i}.npy").as_str()),
-            None, // Some(f!("arrays_saved/time_evol/psi_x/psi_x_t_{i}.npy").as_str()),
-                  // Some(f!("arrays_saved/time_evol/psi_p/psi_p_t_{i}.npy").as_str()),
+        measure_time!("SSFM", {
+            ssfm.time_step_evol(
+                &mut psi, &mut t, None,
+                None, // Some(f!("arrays_saved/time_evol/psi_x/psi_x_t_{i}.npy").as_str()),
+                     // Some(f!("arrays_saved/time_evol/psi_p/psi_p_t_{i}.npy").as_str()),
+            );
+        });
+        // график волновой функции
+        psi.plot_log(
+            format!("imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
+            [1e-8, 1.0],
         );
-        println!("SSFM = {:.3}", time_ssfm.elapsed().as_secs_f32());
+        //обновление производных
+        measure_time!("update_deriv", {
+            psi.update_derivatives();
+        });
         //============================================================
         //                       t-SURFF
         //============================================================
-        // let tsurff_time = Instant::now();
-        // tsurff.time_integration_step(&psi, &t);
-        // println!("t-surff = {:.3}", tsurff_time.elapsed().as_secs_f32());
+        measure_time!("tsurff", {
+            tsurff.time_integration_step(&psi, &t);
+            if i % 100 == 0 {
+                tsurff.plot_log(f!("imgs/tsurff/pwf_tsurff{i}.png").as_str(), [1e-5, 1.0]);
+            }
+        });
         //============================================================
         //                       Flow
         //============================================================
-        let flow_time = Instant::now();
-        flow.add_instance_flow(&psi, t.current);
-        println!("flow_time = {}", flow_time.elapsed().as_secs_f32());
+        measure_time!("flow_time", {
+            flow.add_instance_flow(&psi, t.current);
+        });
 
         //============================================================
         println!(
@@ -119,7 +131,9 @@ fn main() {
             total_time.elapsed().as_secs_f32()
         )
     }
-    flow.plot_flow("flow_graph.png");
+    tsurff.save("arrays_saved/time_evol/tsurff/pwf_tsurff.npy");
+    tsurff.plot_log("imgs/tsurff/pwf_tsurff.png", [1e-5, 1.0]);
+    flow.plot_flow("imgs/flow/flow_graph.png");
     let total_flow = flow.compute_total_flow(t.t_step());
     println!("total_flow = {}", total_flow);
     println!(

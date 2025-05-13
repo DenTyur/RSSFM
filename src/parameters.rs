@@ -110,7 +110,7 @@ impl Xspace {
         let mut n: Vec<usize> = Vec::new();
 
         for i in 0..dim {
-            let x_path = String::from(dir_path) + f!("/x{i}.npy").as_str();
+            let x_path = String::from(dir_path) + format!("/x{i}.npy").as_str();
             let reader = File::open(x_path).unwrap();
             x.push(Array1::<f32>::read_npy(reader).unwrap());
             x0.push(x[i][[0]]);
@@ -135,7 +135,7 @@ impl Xspace {
         // далее в зависимости от размерности пространства.
 
         for i in 0..self.dim {
-            let x_path = String::from(dir_path) + f!("/x{i}.npy").as_str();
+            let x_path = String::from(dir_path) + format!("/x{i}.npy").as_str();
             let writer = BufWriter::new(File::create(x_path)?);
             self.grid[i].write_npy(writer)?;
         }
@@ -188,7 +188,7 @@ impl Pspace {
         // далее в зависимости от размерности пространства.
 
         for i in 0..self.dim {
-            let p_path = String::from(dir_path) + f!("p{i}.npy").as_str();
+            let p_path = String::from(dir_path) + format!("p{i}.npy").as_str();
             let writer = BufWriter::new(File::create(p_path)?);
             self.grid[i].write_npy(writer)?;
         }

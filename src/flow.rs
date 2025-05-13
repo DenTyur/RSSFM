@@ -57,7 +57,7 @@ impl Circle {
 }
 
 pub struct Square<'a> {
-    border: F,
+    pub border: F,
     x: &'a Xspace,
 }
 
@@ -212,8 +212,8 @@ impl<'a> Flux for LenthGauge<'a> {
 pub struct Flow<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> {
     gauge: &'a G,
     surface: &'a S,
-    instance_flow: Vec<C>,
-    time_instance: Vec<F>,
+    pub instance_flow: Vec<C>,
+    pub time_instance: Vec<F>,
 }
 
 impl<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> Flow<'a, G, S> {

@@ -1,4 +1,6 @@
 use crate::field;
+use crate::heatmap;
+use crate::logcolormap;
 use crate::parameters;
 use field::Field2D;
 use ndarray::prelude::*;
@@ -21,7 +23,93 @@ pub trait ValueAndSpaceDerivatives {
 
 pub struct WaveFunction<'a> {
     pub psi: Array<Complex<f32>, Ix2>,
+    pub dpsi_dx: Array<Complex<f32>, Ix2>,
+    pub dpsi_dy: Array<Complex<f32>, Ix2>,
     x: &'a Xspace,
+    p: Pspace,
+}
+
+///спектральная производная
+pub fn fft_dpsi_dx(psi: &mut Array2<C>, x: &Xspace, p: &Pspace) {
+    use super::evolution::FftMaker2d;
+    use itertools::multizip;
+    let mut fft = FftMaker2d::new(&x.n);
+    multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_row, x_point)| {
+            multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                // соединяем второй индекс psi с y
+                .for_each(|(psi_elem, y_point)| {
+                    // модифицируем psi
+                    *psi_elem *= x.dx[0] * x.dx[1] / (2. * PI)
+                        * (-I * (p.p0[0] * x_point + p.p0[1] * *y_point)).exp();
+                });
+        });
+    fft.fft(psi);
+    psi.axis_iter_mut(Axis(0))
+        .zip(p.grid[0].iter())
+        .par_bridge()
+        .for_each(|(mut distr_row, px_point)| {
+            distr_row
+                .iter_mut()
+                .zip(p.grid[1].iter())
+                .for_each(|(distr_elem, py_point)| {
+                    *distr_elem *= I * px_point;
+                });
+        });
+    fft.ifft(psi);
+    multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_row, x_point)| {
+            multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                // соединяем второй индекс psi с y
+                .for_each(|(psi_elem, y_point)| {
+                    // демодифицируем psi
+                    *psi_elem *= (2. * PI) / (x.dx[0] * x.dx[1])
+                        * (I * (p.p0[0] * x_point + p.p0[1] * y_point)).exp();
+                });
+        });
+}
+
+pub fn fft_dpsi_dy(psi: &mut Array2<C>, x: &Xspace, p: &Pspace) {
+    use super::evolution::FftMaker2d;
+    use itertools::multizip;
+    let mut fft = FftMaker2d::new(&x.n);
+    multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_row, x_point)| {
+            multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                // соединяем второй индекс psi с y
+                .for_each(|(psi_elem, y_point)| {
+                    // модифицируем psi
+                    *psi_elem *= x.dx[0] * x.dx[1] / (2. * PI)
+                        * (-I * (p.p0[0] * x_point + p.p0[1] * *y_point)).exp();
+                });
+        });
+    fft.fft(psi);
+    psi.axis_iter_mut(Axis(0))
+        .zip(p.grid[0].iter())
+        .par_bridge()
+        .for_each(|(mut distr_row, px_point)| {
+            distr_row
+                .iter_mut()
+                .zip(p.grid[1].iter())
+                .for_each(|(distr_elem, py_point)| {
+                    *distr_elem *= I * py_point;
+                });
+        });
+    fft.ifft(psi);
+    multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_row, x_point)| {
+            multizip((psi_row.iter_mut(), x.grid[1].iter()))
+                // соединяем второй индекс psi с y
+                .for_each(|(psi_elem, y_point)| {
+                    // демодифицируем psi
+                    *psi_elem *= (2. * PI) / (x.dx[0] * x.dx[1])
+                        * (I * (p.p0[0] * x_point + p.p0[1] * y_point)).exp();
+                });
+        });
 }
 
 impl<'a> ValueAndSpaceDerivatives for WaveFunction<'a> {
@@ -32,11 +120,8 @@ impl<'a> ValueAndSpaceDerivatives for WaveFunction<'a> {
         let ix = ((x[0] - x_min) / self.x.dx[0]).round() as usize;
         let iy = ((x[1] - y_min) / self.x.dx[1]).round() as usize;
 
-        // вычисляем радиальную производную
-        let dpsi_dx = (self.psi[(ix + 1, iy)] - self.psi[(ix - 1, iy)]) / (2.0 * self.x.dx[0]);
-        let dpsi_dy = (self.psi[(ix, iy + 1)] - self.psi[(ix, iy - 1)]) / (2.0 * self.x.dx[1]);
-
-        [dpsi_dx, dpsi_dy]
+        // вычисляем производную
+        [self.dpsi_dx[(ix, iy)], self.dpsi_dy[(ix, iy)]]
     }
 
     fn value(&self, x: [F; 2]) -> C {
@@ -52,32 +137,48 @@ impl<'a> ValueAndSpaceDerivatives for WaveFunction<'a> {
 
 impl<'a> WaveFunction<'a> {
     pub fn new(psi: Array<Complex<f32>, Ix2>, x: &'a Xspace) -> Self {
-        Self { psi, x }
+        let dpsi_dx: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
+        let dpsi_dy: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
+        let p = Pspace::init(x);
+        Self {
+            psi,
+            x,
+            p,
+            dpsi_dx,
+            dpsi_dy,
+        }
     }
 
-    pub fn init_zeros(x: &'a Xspace) -> Self {
-        let mut psi: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
-        let j: Complex<f32> = Complex::I;
-        Self { psi, x }
+    pub fn update_derivatives(&mut self) {
+        self.dpsi_dx = self.psi.clone();
+        self.dpsi_dy = self.psi.clone();
+        fft_dpsi_dx(&mut self.dpsi_dx, self.x, &self.p);
+        fft_dpsi_dy(&mut self.dpsi_dy, self.x, &self.p);
     }
 
-    // Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
-    pub fn init_oscillator_2d(x: &'a Xspace) -> Self {
-        let mut psi: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
-        let j: Complex<f32> = Complex::I;
-        psi.axis_iter_mut(Axis(0))
-            .zip(x.grid[0].iter())
-            .par_bridge()
-            .for_each(|(mut psi_row, x_i)| {
-                psi_row
-                    .iter_mut()
-                    .zip(x.grid[1].iter())
-                    .for_each(|(psi_elem, y_j)| {
-                        *psi_elem = (-0.5 * (x_i.powi(2) + y_j.powi(2))).exp() + 0. * j;
-                    })
-            });
-        Self { psi, x }
-    }
+    // pub fn init_zeros(x: &'a Xspace) -> Self {
+    //     let mut psi: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
+    //     let j: Complex<f32> = Complex::I;
+    //     Self { psi, x }
+    // }
+    //
+    // // Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
+    // pub fn init_oscillator_2d(x: &'a Xspace) -> Self {
+    //     let mut psi: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
+    //     let j: Complex<f32> = Complex::I;
+    //     psi.axis_iter_mut(Axis(0))
+    //         .zip(x.grid[0].iter())
+    //         .par_bridge()
+    //         .for_each(|(mut psi_row, x_i)| {
+    //             psi_row
+    //                 .iter_mut()
+    //                 .zip(x.grid[1].iter())
+    //                 .for_each(|(psi_elem, y_j)| {
+    //                     *psi_elem = (-0.5 * (x_i.powi(2) + y_j.powi(2))).exp() + 0. * j;
+    //                 })
+    //         });
+    //     Self { psi, x }
+    // }
 
     //Возвращает вероятность в расчетной области волновой функции
     pub fn prob_in_numerical_box(&self) -> f32 {
@@ -118,10 +219,16 @@ impl<'a> WaveFunction<'a> {
 
     // Загружает волновую функцию из файла.
     pub fn init_from_file(psi_path: &str, x: &'a Xspace) -> Self {
+        let dpsi_dx: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
+        let dpsi_dy: Array<Complex<f32>, Ix2> = Array::zeros((x.n[0], x.n[1]));
         let reader = File::open(psi_path).unwrap();
+        let p = Pspace::init(x);
         Self {
             psi: Array::<Complex<f32>, Ix2>::read_npy(reader).unwrap(),
             x,
+            p,
+            dpsi_dx,
+            dpsi_dy,
         }
     }
 
@@ -159,5 +266,66 @@ impl<'a> WaveFunction<'a> {
                         *psi_elem *= (I * (x * vec_pot[0] + y * vec_pot[1]) - I / 2.0 * b).exp();
                     })
             });
+    }
+
+    pub fn plot(&self, path: &str, colorbar_limits: [F; 2]) {
+        let mut a: Array2<F> = Array::zeros((self.x.n[0], self.x.n[1]));
+
+        self.psi
+            .axis_iter(Axis(0))
+            .zip(a.axis_iter_mut(Axis(0)))
+            .par_bridge()
+            .for_each(|(psi_row, mut a_row)| {
+                psi_row
+                    .iter()
+                    .zip(a_row.iter_mut())
+                    .for_each(|(psi_elem, a_elem)| {
+                        *a_elem = psi_elem.im.powi(2) + psi_elem.re.powi(2);
+                    })
+            });
+
+        let (size_x, size_y, size_colorbar) = (500, 500, 60);
+        let [colorbar_min, colorbar_max] = colorbar_limits;
+
+        heatmap::plot_heatmap(
+            &self.x.grid[0],
+            &self.x.grid[1],
+            &a,
+            size_x,
+            size_y,
+            size_colorbar,
+            colorbar_min,
+            colorbar_max,
+            path,
+        )
+    }
+
+    pub fn plot_log(&self, path: &str, colorbar_limits: [F; 2]) {
+        let mut a: Array2<F> = Array::zeros((self.x.n[0], self.x.n[1]));
+
+        self.psi
+            .axis_iter(Axis(0))
+            .zip(a.axis_iter_mut(Axis(0)))
+            .par_bridge()
+            .for_each(|(psi_row, mut a_row)| {
+                psi_row
+                    .iter()
+                    .zip(a_row.iter_mut())
+                    .for_each(|(psi_elem, a_elem)| {
+                        *a_elem = psi_elem.im.powi(2) + psi_elem.re.powi(2);
+                    })
+            });
+
+        let (size_x, size_y, size_colorbar) = (500, 500, 60);
+        let [colorbar_min, colorbar_max] = colorbar_limits;
+
+        logcolormap::plot_heatmap_logscale(
+            &a,
+            &self.x.grid[0],
+            &self.x.grid[1],
+            (colorbar_min, colorbar_max),
+            path,
+        )
+        .unwrap();
     }
 }
