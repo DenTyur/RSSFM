@@ -10,8 +10,12 @@ ndarray-npy = "0.8.1"
 num-complex = "0.4.6"
 rayon = "1.10.0"
 itertools = "0.13.0"
-fstrings = "0.2.3"
 plotters = "0.3.7"
 plotly = "0.12.1"
 colorous = "1.0.15"
 colorgrad = "0.6"
+
+[features]
+dim1 = []          # 1D реализация
+dim2 = []          # 2D реализация (текущий код)
+default = ["dim2"] # По умолчанию используется 2D

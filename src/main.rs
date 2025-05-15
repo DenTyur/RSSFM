@@ -1,56 +1,41 @@
-#[macro_use]
-extern crate fstrings;
-
-mod evolution;
-mod field;
-mod flow;
-mod gauge;
-mod heatmap;
-mod logcolormap;
+mod common;
+mod config;
+mod dim2;
 mod macros;
-mod parameters;
-mod potentials;
-mod tsurff;
-mod volkov;
-mod wave_function;
+mod traits;
+use crate::common::tspace::Tspace;
+use crate::dim2::{
+    field::Field2D,
+    flow::{Flow2D, Square},
+    gauge::VelocityGauge2D,
+    potentials::{absorbing_potential, br_1e2d_external},
+    space::{Pspace2D, Xspace2D},
+    ssfm::SSFM2D,
+    tsurff::Tsurff2D,
+    wave_function::WaveFunction2D,
+};
 use crate::macros::measure_time;
-use evolution::{EvolutionSSFM, SSFM};
-use field::Field2D;
-use flow::*;
-use gauge::{LenthGauge, VelocityGauge};
-use ndarray::prelude::*;
-use ndarray_npy::{ReadNpyError, ReadNpyExt, WriteNpyError, WriteNpyExt};
-use num_complex::Complex;
-use parameters::{Pspace, Tspace, Xspace};
-use potentials::{absorbing_potential, br_1e2d_external, AtomicPotential};
-use rayon::prelude::*;
-use std::f32::consts::PI;
-use std::fs::File;
-use std::io::BufWriter;
-use std::process::exit;
+use crate::traits::{space::Space, ssfm::SSFM, tsurff::Tsurff, wave_function::WaveFunction};
 use std::time::Instant;
-use tsurff::*;
-use wave_function::WaveFunction;
-
-type F = f32;
-type C = Complex<f32>;
 
 fn main() {
-    catalogs_check();
+    // префикс для сохранения
+    let out_prefix = "out/dim2";
     // пути к сохраненным массивам
     let x_dir_path = "arrays_saved";
     let psi_path = "arrays_saved/psi_initial.npy";
 
     // задаем параметры временной сетки
-    let mut t = Tspace::new(0., 0.2, 1, 2200);
-    t.save_grid("arrays_saved/time_evol/t.npy").unwrap();
+    let mut t = Tspace::new(0., 0.1, 1, 6000);
+    t.save_grid(format!("{out_prefix}/time_evol/t.npy").as_str())
+        .unwrap();
 
     // задаем координатную сетку
-    let x = Xspace::load(x_dir_path, 2);
+    let x = Xspace2D::load_from_npy(x_dir_path);
 
     // инициализируем импульсную сетку на основе координатной сетки
-    let p = Pspace::init(&x);
-    p.save("arrays_saved/").unwrap();
+    let p = Pspace2D::init(&x);
+    p.save_as_npy("arrays_saved/").unwrap();
 
     // инициализируем внешнее поле
     let field = Field2D {
@@ -60,21 +45,20 @@ fn main() {
         x_envelop: 30.0001,
     };
     // указываем калибровку поля
-    let gauge = VelocityGauge::new(&field);
+    let gauge = VelocityGauge2D::new(&field);
 
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let mut ssfm = SSFM::new(&gauge, &x, &p, br_1e2d_external, absorbing_potential);
+    let mut ssfm = SSFM2D::new(&gauge, &x, br_1e2d_external, absorbing_potential);
 
     // создаем структуру для потока вероятности через поверхность
-    let surface = Circle::new(25.0, 50);
-    let mut flow = Flow::new(&gauge, &surface);
+    let surface = Square::new(20.0, &x);
+    let mut flow = Flow2D::new(&gauge, &surface);
 
     // t-surff
-    let mut tsurff = Tsurff::new(&gauge, &surface, &x, &p, Some(3.0));
+    let mut tsurff = Tsurff2D::new(&gauge, &surface, &p, Some(3.0));
 
     // генерация начальной волновой функции psi
-    let mut psi = WaveFunction::init_from_file(psi_path, &x);
-    // нормируем на всякий случай
+    let mut psi = WaveFunction2D::init_from_npy(psi_path, x.clone());
     psi.normalization_by_1();
 
     // эволюция
@@ -94,16 +78,19 @@ fn main() {
         //============================================================
         measure_time!("SSFM", {
             ssfm.time_step_evol(
-                &mut psi, &mut t, None,
-                None, // Some(f!("arrays_saved/time_evol/psi_x/psi_x_t_{i}.npy").as_str()),
-                     // Some(f!("arrays_saved/time_evol/psi_p/psi_p_t_{i}.npy").as_str()),
+                &mut psi, &mut t,
+                None,
+                // Some(f!("arrays_saved/time_evol/psi_x/psi_x_t_{i}.npy").as_str()),
+                // Some(f!("arrays_saved/time_evol/psi_p/psi_p_t_{i}.npy").as_str()),
             );
         });
         // график волновой функции
-        psi.plot_log(
-            format!("imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
-            [1e-8, 1.0],
-        );
+        if i % 100 == 0 {
+            psi.plot_log(
+                format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
+                [1e-8, 1.0],
+            );
+        }
         //обновление производных
         measure_time!("update_deriv", {
             psi.update_derivatives();
@@ -114,7 +101,10 @@ fn main() {
         measure_time!("tsurff", {
             tsurff.time_integration_step(&psi, &t);
             if i % 100 == 0 {
-                tsurff.plot_log(f!("imgs/tsurff/pwf_tsurff{i}.png").as_str(), [1e-5, 1.0]);
+                tsurff.plot_log(
+                    format!("{out_prefix}/tsurff/tsurff{i}.png").as_str(),
+                    [1e-5, 1.0],
+                );
             }
         });
         //============================================================
@@ -123,7 +113,6 @@ fn main() {
         measure_time!("flow_time", {
             flow.add_instance_flow(&psi, t.current);
         });
-
         //============================================================
         println!(
             "time_step = {:.3}, total_time = {:.3}",
@@ -131,39 +120,12 @@ fn main() {
             total_time.elapsed().as_secs_f32()
         )
     }
-    tsurff.save("arrays_saved/time_evol/tsurff/pwf_tsurff.npy");
-    tsurff.plot_log("imgs/tsurff/pwf_tsurff.png", [1e-5, 1.0]);
-    flow.plot_flow("imgs/flow/flow_graph.png");
+
+    flow.plot_flow(format!("{out_prefix}/imgs/flow.png").as_str());
     let total_flow = flow.compute_total_flow(t.t_step());
     println!("total_flow = {}", total_flow);
     println!(
         "total_flow + prob_in_box = {}",
         total_flow.re + psi.prob_in_numerical_box()
     );
-}
-
-fn save1dc(arr: Array1<C>, path: &str) {
-    let writer = BufWriter::new(File::create(path).unwrap());
-    arr.write_npy(writer).unwrap();
-}
-
-fn save2dc(arr: Array2<C>, path: &str) {
-    let writer = BufWriter::new(File::create(path).unwrap());
-    arr.write_npy(writer).unwrap();
-}
-
-fn catalogs_check() {
-    use std::fs;
-    use std::path::Path;
-    let paths = [
-        "arrays_saved",
-        "arrays_saved/time_evol",
-        "arrays_saved/time_evol/psi_x",
-        "arrays_saved/time_evol/psi_p",
-    ];
-    for path in paths {
-        if !Path::new(path).exists() {
-            fs::create_dir(path).unwrap();
-        }
-    }
 }

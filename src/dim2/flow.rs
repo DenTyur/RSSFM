@@ -1,88 +1,34 @@
-use crate::field;
-use crate::gauge;
-use crate::parameters;
-use crate::volkov;
-use crate::wave_function;
-use field::Field2D;
-use gauge::{LenthGauge, VelocityGauge};
-use ndarray::prelude::*;
-use ndarray_npy::{ReadNpyError, ReadNpyExt, WriteNpyError, WriteNpyExt};
-use num_complex::Complex;
-use parameters::*;
-use rayon::prelude::*;
-use std::f32::consts::PI;
-use std::fs::File;
-use std::io::BufWriter;
+use crate::config::{C, F, I};
+use crate::dim2::{gauge::VelocityGauge2D, space::Xspace2D};
+use crate::macros::check_path;
+use crate::traits::{
+    flow::{Flux, SurfaceFlow},
+    wave_function::ValueAndSpaceDerivatives,
+};
 use std::marker::{Send, Sync};
-use volkov::{Volkov, VolkovGauge};
-use wave_function::{ValueAndSpaceDerivatives, WaveFunction};
 
-type F = f32;
-type C = Complex<F>;
-const I: C = Complex::I;
+//============================================================================
+//                 Поверхность и поток через нее
+//============================================================================
 
-pub struct Circle {
-    r: F,
-    n_points: usize,
-    dphi: F,
-    ds: F,
-}
-
-impl Circle {
-    pub fn new(r: F, n_points: usize) -> Self {
-        let dphi = 2.0 * PI / n_points as F;
-        let ds = r * dphi;
-
-        Self {
-            r,
-            n_points,
-            dphi,
-            ds,
-        }
-    }
-
-    pub fn normale_in_point(&self, i: usize) -> [F; 2] {
-        let phi = self.get_phi_in_point(i);
-        [phi.cos(), phi.sin()]
-    }
-
-    pub fn get_phi_in_point(&self, i: usize) -> F {
-        i as F * self.dphi
-    }
-
-    pub fn coords_in_point(&self, i: usize) -> [F; 2] {
-        let phi = self.get_phi_in_point(i);
-        [self.r * phi.cos(), self.r * phi.sin()]
-    }
-}
-
+/// Квадрат. Поверхность, через которую считается поток.
 pub struct Square<'a> {
     pub border: F,
-    x: &'a Xspace,
+    x: &'a Xspace2D,
 }
 
 impl<'a> Square<'a> {
-    pub fn new(border: F, x: &'a Xspace) -> Self {
+    pub fn new(border: F, x: &'a Xspace2D) -> Self {
         Self { border, x }
     }
 }
 
-pub trait SurfaceFlow<G: Flux + Send + Sync> {
+impl<'a, G: Flux<2> + Send + Sync> SurfaceFlow<2, G> for Square<'a> {
     fn compute_surface_flow(
         &self,
         gauge: &G,
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        t: F,
-    ) -> C;
-}
-
-impl<'a, G: Flux + Send + Sync> SurfaceFlow<G> for Square<'a> {
-    fn compute_surface_flow(
-        &self,
-        gauge: &G,
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
+        psi1: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
+        psi2: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
         t: F,
     ) -> C {
         // сейчас считаем, что сетки по x и y одинаковые
@@ -125,49 +71,16 @@ impl<'a, G: Flux + Send + Sync> SurfaceFlow<G> for Square<'a> {
     }
 }
 
-impl<G: Flux + Send + Sync> SurfaceFlow<G> for Circle {
-    fn compute_surface_flow(
-        &self,
-        gauge: &G,
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        t: F,
-    ) -> C {
-        // Интегрируем поток через поверхность:
-        (0..self.n_points)
-            .into_par_iter()
-            .map(|i| {
-                // вычисление точек поверхности и ее нормали в прямоугольных координатах
-                let x = self.coords_in_point(i);
-                let normale = self.normale_in_point(i);
-
-                let j_flux = gauge.compute_flux(x, psi1, psi2, t);
-
-                // проекция потока на нормаль к поверхности
-                j_flux[0] * normale[0] + j_flux[1] * normale[1]
-            })
-            .sum::<C>()
-            * self.ds
-    }
-}
-
-pub trait Flux {
-    // вычисляет вектор потока (вероятности или невероятности)
+//============================================================================
+//                 Плотность потока и калибровка
+//============================================================================
+/// Плотность потока вероятности в калибровке скорости
+impl<'a> Flux<2> for VelocityGauge2D<'a> {
     fn compute_flux(
         &self,
         x: [F; 2],
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        t: F,
-    ) -> [C; 2];
-}
-
-impl<'a> Flux for VelocityGauge<'a> {
-    fn compute_flux(
-        &self,
-        x: [F; 2],
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
+        psi1: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
+        psi2: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
         t: F,
     ) -> [C; 2] {
         let vec_pot = self.field.vec_pot(t); // векторный потенциал
@@ -188,35 +101,17 @@ impl<'a> Flux for VelocityGauge<'a> {
     }
 }
 
-impl<'a> Flux for LenthGauge<'a> {
-    fn compute_flux(
-        &self,
-        x: [F; 2],
-        psi1: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        psi2: &(impl ValueAndSpaceDerivatives + Send + Sync),
-        _t: F,
-    ) -> [C; 2] {
-        let psi1_val = psi1.value(x);
-        let psi2_val = psi2.value(x);
-
-        let psi1_derivs = psi1.deriv(x);
-        let psi2_derivs = psi2.deriv(x);
-
-        let j0 = I / 2.0 * (psi2_val * psi1_derivs[0].conj() - psi1_val.conj() * psi2_derivs[0]);
-
-        let j1 = I / 2.0 * (psi2_val * psi1_derivs[1].conj() - psi1_val.conj() * psi2_derivs[1]);
-
-        [j0, j1]
-    }
-}
-pub struct Flow<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> {
+//============================================================================
+//                 Полный поток
+//============================================================================
+pub struct Flow2D<'a, G: Flux<2> + Send + Sync + Copy, S: SurfaceFlow<2, G> + Sync> {
     gauge: &'a G,
     surface: &'a S,
     pub instance_flow: Vec<C>,
     pub time_instance: Vec<F>,
 }
 
-impl<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> Flow<'a, G, S> {
+impl<'a, G: Flux<2> + Send + Sync + Copy, S: SurfaceFlow<2, G> + Sync> Flow2D<'a, G, S> {
     pub fn new(gauge: &'a G, surface: &'a S) -> Self {
         let instance_flow: Vec<C> = Vec::new();
         let time_instance: Vec<F> = Vec::new();
@@ -230,15 +125,18 @@ impl<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> F
 
     pub fn get_instance_flow(
         &mut self,
-        psi: &(impl ValueAndSpaceDerivatives + Send + Sync),
+        psi: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
         t: F,
     ) -> C {
-        // Кайф!
         self.surface.compute_surface_flow(self.gauge, psi, psi, t)
         // .re // там только действительная часть должна остаться
     }
 
-    pub fn add_instance_flow(&mut self, psi: &(impl ValueAndSpaceDerivatives + Send + Sync), t: F) {
+    pub fn add_instance_flow(
+        &mut self,
+        psi: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
+        t: F,
+    ) {
         let instance_flow = self.get_instance_flow(psi, t);
         self.instance_flow.push(instance_flow);
         self.time_instance.push(t);
@@ -250,6 +148,7 @@ impl<'a, G: VolkovGauge + Flux + Send + Sync + Copy, S: SurfaceFlow<G> + Sync> F
 
     pub fn plot_flow(&self, output_path: &str) {
         use plotters::prelude::*;
+        check_path!(output_path);
 
         // Создаём область для графика
         let root = BitMapBackend::new(output_path, (800, 600)).into_drawing_area();

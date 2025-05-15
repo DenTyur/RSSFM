@@ -1,19 +1,11 @@
-use crate::parameters;
-use ndarray::prelude::*;
-use ndarray_npy::{ReadNpyError, ReadNpyExt, WriteNpyError, WriteNpyExt};
-use num_complex::Complex;
-use parameters::{Pspace, Tspace, Xspace};
+use crate::config::{F, PI};
 use plotly::common::{Marker, Mode, Title};
 use plotly::layout::{Axis, Layout};
 use plotly::{Plot, Scatter};
 use rayon::prelude::*;
-use std::f32::consts::PI;
 use std::fs;
 use std::fs::File;
 use std::io::BufWriter;
-
-type F = f32;
-type C = Complex<f32>;
 
 pub struct Field2D {
     pub amplitude: F,
@@ -159,6 +151,7 @@ impl Field2D {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::tspace::Tspace;
     #[test]
     fn test_plot_vec_pot() {
         let field = Field2D {

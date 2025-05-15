@@ -2,9 +2,7 @@ use crate::field;
 use crate::flow;
 use crate::gauge;
 use crate::heatmap;
-use crate::logcolormap;
 use crate::parameters;
-use crate::tsurff;
 use crate::volkov;
 use crate::wave_function;
 use field::Field2D;
@@ -20,7 +18,6 @@ use std::fs::File;
 use std::io::BufWriter;
 use std::marker::{Send, Sync};
 use std::time::Instant;
-use tsurff::Tsurff;
 use volkov::{Volkov, VolkovGauge};
 use wave_function::{ValueAndSpaceDerivatives, WaveFunction};
 
@@ -178,25 +175,10 @@ impl Gauss {
             path,
         );
     }
-
-    pub fn plot_momentum_distribution_log(&self, p: &Pspace, path: &str, colorbar_limits: [F; 2]) {
-        //строим импульсное аналитическое импульсное
-        let analit_momentum_distr = self.momentum_distribution_as_array(p);
-        let (size_x, size_y, size_colorbar) = (500, 500, 60);
-        // let (colorbar_min, colorbar_max) = (1e-3, 1e-0);
-
-        logcolormap::plot_heatmap_logscale(
-            &analit_momentum_distr,
-            &p.grid[0],
-            &p.grid[1],
-            (colorbar_limits[0], colorbar_limits[1]),
-            path,
-        );
-    }
 }
 ///спектральная производная
 pub fn fft_dpsi_dx(psi: &mut Array2<C>, x: &Xspace, p: &Pspace) {
-    use super::super::evolution::FftMaker2d;
+    use crate::evolution::FftMaker2d;
     use itertools::multizip;
     let mut fft = FftMaker2d::new(&x.n);
     multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
@@ -234,118 +216,6 @@ pub fn fft_dpsi_dx(psi: &mut Array2<C>, x: &Xspace, p: &Pspace) {
                         * (I * (p.p0[0] * x_point + p.p0[1] * y_point)).exp();
                 });
         });
-}
-
-#[test]
-fn ssfm_gauss() {
-    use crate::evolution::SSFM;
-    use crate::macros::measure_time;
-
-    let mut t = Tspace::new(0., 0.2, 1, 100);
-    let dx: F = 0.5;
-    let n: usize = 350;
-    let x = Xspace::new(vec![-80.0, -80.0], vec![dx, dx], vec![n, n]);
-    let p = Pspace::init(&x);
-
-    let field = Field2D {
-        amplitude: 0.0,
-        omega: 0.04,
-        N: 3.0,
-        x_envelop: 30.0001,
-    };
-    let gauge = VelocityGauge::new(&field);
-
-    fn potential(_x: F, _y: F) -> F {
-        0.0
-    }
-
-    fn absorbing_potential(x: F, y: F) -> C {
-        let r0: F = 20.0;
-        let alpha: F = 0.02;
-        let r: F = (x.powi(2) + y.powi(2)).sqrt();
-        if r > r0 {
-            -I * (r - r0).abs() * alpha
-        } else {
-            C::new(0.0, 0.0)
-        }
-    }
-
-    let mut ssfm = SSFM::new(&gauge, &x, &p, potential, absorbing_potential);
-
-    let gauss = Gauss::new([0.0, 3.0], 1.0);
-    gauss.plot_momentum_distribution_log(
-        &p,
-        "src/tests/out/gauss/analit_momemtum_disrt.png",
-        [1e-5, 1.0],
-    );
-    let mut psi = WaveFunction::new(gauss.wf_as_array(&x, 0.0), &x);
-
-    // создаем структуру для потока вероятности через поверхность
-    let surface = Square::new(10.0, &x);
-    let mut flow = Flow::new(&gauge, &surface);
-    // t-surff
-    let mut tsurff = Tsurff::new(&gauge, &surface, &x, &p, None);
-
-    let total_time = Instant::now();
-    for i in 0..t.nt {
-        let time_step = Instant::now();
-        println!(
-            "STEP {}/{}, t.current={:.5}, norm = {}, prob_in_box = {}",
-            i,
-            t.nt,
-            t.current,
-            psi.norm(),
-            psi.prob_in_numerical_box(),
-        );
-        //============================================================
-        //                       SSFM
-        //============================================================
-        measure_time!("SSFM", {
-            ssfm.time_step_evol(&mut psi, &mut t, None, None);
-        });
-        // график волновой функции
-        psi.plot_log(
-            format!("src/tests/out/gauss/psi_x/psi_x_t_{i}.png").as_str(),
-            [1e-8, 1.0],
-        );
-        //обновление производных
-        measure_time!("update_deriv", {
-            psi.update_derivatives();
-        });
-        //============================================================
-        //                       t-SURFF
-        //============================================================
-        measure_time!("tsurff", {
-            tsurff.time_integration_step(&psi, &t);
-            // if i % 10 == 0 {
-            tsurff.plot_log(
-                format!("src/tests/out/gauss/tsurff/tsurff_{i}.png").as_str(),
-                [1e-5, 1.0],
-            );
-            // }
-        });
-        //============================================================
-        //                       Flow
-        //============================================================
-        measure_time!("flow_time", {
-            flow.add_instance_flow(&psi, t.current);
-        });
-
-        //============================================================
-        println!(
-            "time_step = {:.3}, total_time = {:.3}",
-            time_step.elapsed().as_secs_f32(),
-            total_time.elapsed().as_secs_f32()
-        )
-    }
-
-    flow.plot_flow("src/tests/out/gauss/flow_graph.png");
-    let total_flow = flow.compute_total_flow(t.t_step());
-    println!("total_flow = {}", total_flow);
-    println!(
-        "total_flow + prob_in_box = {}",
-        total_flow.re + psi.prob_in_numerical_box()
-    );
 }
 
 #[test]
