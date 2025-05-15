@@ -1,4 +1,5 @@
 /// Макрос для замера времени
+#[macro_export]
 macro_rules! measure_time {
     ($label:expr, $code:block) => {
         let start = std::time::Instant::now();
@@ -7,7 +8,6 @@ macro_rules! measure_time {
         println!("{}: {:.3}", $label, duration);
     };
 }
-pub(crate) use measure_time;
 
 /// Макрос для проверки существования директории и создания ее
 macro_rules! check_path {

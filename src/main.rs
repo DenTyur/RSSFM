@@ -2,19 +2,20 @@ mod common;
 mod config;
 mod dim2;
 mod macros;
+mod potentials;
 mod traits;
 use crate::common::tspace::Tspace;
+use crate::config::F;
 use crate::dim2::{
     field::Field2D,
     flow::{Flow2D, Square},
     gauge::VelocityGauge2D,
-    potentials::{absorbing_potential, br_1e2d_external},
     space::{Pspace2D, Xspace2D},
     ssfm::SSFM2D,
     tsurff::Tsurff2D,
     wave_function::WaveFunction2D,
 };
-use crate::macros::measure_time;
+use crate::potentials::{absorbing_potentials::absorbing_potential, potentials::br_1e2d_external};
 use crate::traits::{space::Space, ssfm::SSFM, tsurff::Tsurff, wave_function::WaveFunction};
 use std::time::Instant;
 
@@ -48,7 +49,8 @@ fn main() {
     let gauge = VelocityGauge2D::new(&field);
 
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let mut ssfm = SSFM2D::new(&gauge, &x, br_1e2d_external, absorbing_potential);
+    let abs_pot = |x: [F; 2]| absorbing_potential(x, 30.0, 0.02);
+    let mut ssfm = SSFM2D::new(&gauge, &x, br_1e2d_external, abs_pot);
 
     // создаем структуру для потока вероятности через поверхность
     let surface = Square::new(20.0, &x);

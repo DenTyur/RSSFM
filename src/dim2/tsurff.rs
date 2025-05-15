@@ -1,6 +1,5 @@
 use super::space::Pspace2D;
 use super::volkov::Volkov2D;
-use super::{heatmap, logcolormap};
 use crate::common::tspace::Tspace;
 use crate::config::{C, F};
 use crate::macros::check_path;
@@ -10,6 +9,7 @@ use crate::traits::{
     volkov::VolkovGauge,
     wave_function::ValueAndSpaceDerivatives,
 };
+use crate::utils::{heatmap, logcolormap};
 use ndarray::prelude::*;
 use ndarray_npy::WriteNpyExt;
 use rayon::prelude::*;
@@ -25,7 +25,7 @@ where
     gauge: &'a G,
     surface: &'a S,
     pub psi_p: Array<C, Ix2>,
-    p: Pspace2D,
+    pub p: Pspace2D,
 }
 
 impl<'a, G, S> Tsurff<'a, 2, G, S> for Tsurff2D<'a, G, S>
@@ -61,6 +61,7 @@ where
     }
 
     fn save_as_npy(&self, path: &str) {
+        check_path!(path);
         let writer = BufWriter::new(File::create(path).unwrap());
         self.psi_p.write_npy(writer).unwrap();
     }

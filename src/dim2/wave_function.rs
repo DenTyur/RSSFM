@@ -1,6 +1,5 @@
 use super::{
     fft_maker::FftMaker2D,
-    heatmap, logcolormap,
     space::{Pspace2D, Xspace2D},
 };
 use crate::config::{C, F, I, PI};
@@ -9,6 +8,7 @@ use crate::traits::{
     fft_maker::FftMaker,
     wave_function::{ValueAndSpaceDerivatives, WaveFunction},
 };
+use crate::utils::{heatmap, logcolormap};
 use itertools::multizip;
 use ndarray::prelude::*;
 use ndarray::Array2;

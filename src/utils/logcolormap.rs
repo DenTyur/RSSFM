@@ -31,7 +31,11 @@ pub fn plot_heatmap_logscale(
     let (main_area, colorbar_area) = root.split_horizontally(790);
 
     // Основной график
+    let colormin = color_limits.0;
+    let colormax = color_limits.1;
+    let title = format!("colorbar_limits = log {:e}, {:e}", colormin, colormax);
     let mut chart = ChartBuilder::on(&main_area)
+        .caption(&title, ("sans-serif", 20).into_font())
         .margin(20)
         .x_label_area_size(30)
         .y_label_area_size(30)
