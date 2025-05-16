@@ -2,6 +2,31 @@
 name = "RSSFM2D"
 version = "0.1.0"
 edition = "2021"
+readme = "README.md"
+
+[lib]
+name = "rssfm"
+path = "src/lib.rs"
+
+[[bin]]
+name = "br_2d_external"
+path = "src/out/br/dim2/external/br_2d_external.rs"
+
+[[bin]]
+name = "br_2d_inner"
+path = "src/out/br/dim2/inner/br_2d_inner.rs"
+
+[[bin]]
+name = "br_dimd"
+path = "src/out/br/dim2/ion_momentum_distribution/dimd.rs"
+
+[[bin]]
+name = "main4d"
+path = "src/out/dim4/main4d.rs"
+
+[[bin]]
+name = "main"
+path = "src/main.rs"
 
 [dependencies]
 ndarray = "0.15"
@@ -14,8 +39,10 @@ plotters = "0.3.7"
 plotly = "0.12.1"
 colorous = "1.0.15"
 colorgrad = "0.6"
+# GSL = "7.0.0"
 
-[features]
-dim1 = []          # 1D реализация
-dim2 = []          # 2D реализация (текущий код)
-default = ["dim2"] # По умолчанию используется 2D
+# [features]
+# dim1 = []          # 1D реализация
+# dim2 = []          # 2D реализация (текущий код)
+# dim4 = []          # 4D реализация (текущий код)
+# default = ["dim4"] # По умолчанию

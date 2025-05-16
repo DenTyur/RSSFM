@@ -27,6 +27,8 @@ impl FftMaker2D {
     pub fn do_ifft(&mut self, psi: &mut WaveFunction2D) {
         ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[1], 1);
         ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[0], 0);
+        // ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[0], 0);
+        // ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[1], 1);
     }
 }
 
@@ -38,9 +40,9 @@ impl FftMaker<Ix2> for FftMaker2D {
         ndfft_par(&self.psi_temp, arr, &mut self.handler[1], 1);
     }
 
-    fn ifft(&mut self, psi: &mut Array2<C>) {
-        ndifft_par(psi, &mut self.psi_temp, &mut self.handler[1], 1);
-        ndifft_par(&self.psi_temp, psi, &mut self.handler[0], 0);
+    fn ifft(&mut self, arr: &mut Array2<C>) {
+        ndifft_par(arr, &mut self.psi_temp, &mut self.handler[1], 1);
+        ndifft_par(&self.psi_temp, arr, &mut self.handler[0], 0);
     }
 
     fn modify_psi(&mut self, wf: &mut WaveFunction2D) {

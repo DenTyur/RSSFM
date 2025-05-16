@@ -1,9 +1,11 @@
 mod common;
 mod config;
 mod dim2;
+mod dim4;
 mod macros;
 mod potentials;
 mod traits;
+mod utils;
 use crate::common::tspace::Tspace;
 use crate::config::F;
 use crate::dim2::{
@@ -27,7 +29,7 @@ fn main() {
     let psi_path = "arrays_saved/psi_initial.npy";
 
     // задаем параметры временной сетки
-    let mut t = Tspace::new(0., 0.1, 1, 6000);
+    let mut t = Tspace::new(0., 0.2, 100, 25);
     t.save_grid(format!("{out_prefix}/time_evol/t.npy").as_str())
         .unwrap();
 
@@ -87,12 +89,12 @@ fn main() {
             );
         });
         // график волновой функции
-        if i % 100 == 0 {
-            psi.plot_log(
-                format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
-                [1e-8, 1.0],
-            );
-        }
+        // if i % 100 == 0 {
+        psi.plot_log(
+            format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
+            [1e-8, 1.0],
+        );
+        // }
         //обновление производных
         measure_time!("update_deriv", {
             psi.update_derivatives();

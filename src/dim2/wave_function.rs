@@ -160,13 +160,13 @@ impl WaveFunction<2> for WaveFunction2D {
 
     fn norm(&self) -> F {
         let volume: F = self.x.dx[0] * self.x.dx[1];
-        f32::sqrt(
-            self.psi
-                .mapv(|a| (a.re.powi(2) + a.im.powi(2)))
-                .sum_axis(Axis(0))
-                .sum()
-                * volume,
-        )
+        (self
+            .psi
+            .mapv(|a| (a.re.powi(2) + a.im.powi(2)))
+            .sum_axis(Axis(0))
+            .sum()
+            * volume)
+            .sqrt()
     }
 
     fn normalization_by_1(&mut self) {
