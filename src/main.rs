@@ -7,7 +7,7 @@ mod potentials;
 mod traits;
 mod utils;
 use crate::common::tspace::Tspace;
-use crate::config::F;
+use crate::config::{C, F};
 use crate::dim2::{
     field::Field2D,
     flow::{Flow2D, Square},
@@ -19,6 +19,9 @@ use crate::dim2::{
 };
 use crate::potentials::{absorbing_potentials::absorbing_potential, potentials::br_1e2d_external};
 use crate::traits::{space::Space, ssfm::SSFM, tsurff::Tsurff, wave_function::WaveFunction};
+use itertools::multizip;
+use ndarray::prelude::*;
+use rayon::prelude::*;
 use std::time::Instant;
 
 fn main() {
@@ -34,11 +37,19 @@ fn main() {
         .unwrap();
 
     // задаем координатную сетку
-    let x = Xspace2D::load_from_npy(x_dir_path);
+    let x_last = Xspace2D::load_from_npy(x_dir_path);
 
-    // инициализируем импульсную сетку на основе координатной сетки
-    let p = Pspace2D::init(&x);
-    p.save_as_npy("arrays_saved/").unwrap();
+    // генерация начальной волновой функции psi
+    let mut psi = WaveFunction2D::init_from_npy(psi_path, x_last.clone());
+
+    // Расширяем сетку
+    let x = Xspace2D::new([-100.0, -100.0], x_last.dx, [400, 400]);
+    psi.extend(&x);
+    psi.normalization_by_1();
+    psi.plot_log("psi_init.png", [1e-8, 1.0]);
+
+    // сохраняем импульсную сетку
+    psi.p.save_as_npy("arrays_saved/").unwrap();
 
     // инициализируем внешнее поле
     let field = Field2D {
@@ -51,7 +62,7 @@ fn main() {
     let gauge = VelocityGauge2D::new(&field);
 
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let abs_pot = |x: [F; 2]| absorbing_potential(x, 30.0, 0.02);
+    let abs_pot = |x: [F; 2]| absorbing_potential(x, 50.0, 0.02);
     let mut ssfm = SSFM2D::new(&gauge, &x, br_1e2d_external, abs_pot);
 
     // создаем структуру для потока вероятности через поверхность
@@ -59,11 +70,7 @@ fn main() {
     let mut flow = Flow2D::new(&gauge, &surface);
 
     // t-surff
-    let mut tsurff = Tsurff2D::new(&gauge, &surface, &p, Some(3.0));
-
-    // генерация начальной волновой функции psi
-    let mut psi = WaveFunction2D::init_from_npy(psi_path, x.clone());
-    psi.normalization_by_1();
+    // let mut tsurff = Tsurff2D::new(&gauge, &surface, &p, Some(3.0));
 
     // эволюция
     let total_time = Instant::now();
@@ -102,15 +109,15 @@ fn main() {
         //============================================================
         //                       t-SURFF
         //============================================================
-        measure_time!("tsurff", {
-            tsurff.time_integration_step(&psi, &t);
-            if i % 100 == 0 {
-                tsurff.plot_log(
-                    format!("{out_prefix}/tsurff/tsurff{i}.png").as_str(),
-                    [1e-5, 1.0],
-                );
-            }
-        });
+        // measure_time!("tsurff", {
+        //     tsurff.time_integration_step(&psi, &t);
+        //     if i % 100 == 0 {
+        //         tsurff.plot_log(
+        //             format!("{out_prefix}/tsurff/tsurff{i}.png").as_str(),
+        //             [1e-5, 1.0],
+        //         );
+        //     }
+        // });
         //============================================================
         //                       Flow
         //============================================================

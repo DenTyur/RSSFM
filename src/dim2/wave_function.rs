@@ -18,6 +18,7 @@ use rayon::prelude::*;
 use std::fs::File;
 use std::io::BufWriter;
 
+#[derive(Debug, Clone)]
 pub struct WaveFunction2D {
     pub psi: Array2<C>,
     pub dpsi_dx: Array2<C>,
@@ -54,6 +55,54 @@ impl WaveFunction2D {
             dpsi_dx,
             dpsi_dy,
         }
+    }
+    /// Расширяет сетку волновой функции нулями
+    ///
+    /// # Аргументы
+    /// * `x_new` - структура Xspace2D c новыми координатными осями
+    pub fn extend(&mut self, x_new: &Xspace2D) {
+        // Проверяем, что шаги сетки совпадают
+        assert!(
+            (x_new.dx[0] - self.x.dx[0]).abs() < 1e-10,
+            "Шаг x1 должен совпадать"
+        );
+        assert!(
+            (x_new.dx[1] - self.x.dx[1]).abs() < 1e-10,
+            "Шаг x2 должен совпадать"
+        );
+
+        // Проверяем, что новые оси содержат старые
+        assert!(
+            x_new.grid[0][0] <= self.x.grid[0][0]
+                && x_new.grid[0][x_new.n[0] - 1] >= self.x.grid[0][self.x.n[0] - 1],
+            "x1_new должна содержать x1"
+        );
+        assert!(
+            x_new.grid[1][0] <= self.x.grid[1][0]
+                && x_new.grid[1][x_new.n[1] - 1] >= self.x.grid[1][self.x.n[1] - 1],
+            "x2_new должна содержать x2"
+        );
+
+        // Создаем новый массив, заполненный нулями
+        let mut psi_new: Array2<C> = Array2::zeros((x_new.n[0], x_new.n[1]));
+
+        // Находим индексы, куда нужно вставить старый массив
+        let x1_start = ((self.x.grid[0][0] - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
+        let x1_end = x1_start + self.x.n[0];
+
+        let x2_start = ((self.x.grid[1][0] - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
+        let x2_end = x2_start + self.x.n[1];
+
+        // Вставляем старые данные в новый массив
+        let mut psi_slice = psi_new.slice_mut(s![x1_start..x1_end, x2_start..x2_end]);
+        psi_slice.assign(&self.psi);
+
+        // Обновляем все поля
+        self.psi = psi_new;
+        self.dpsi_dx = Array2::zeros((x_new.n[0], x_new.n[1]));
+        self.dpsi_dy = Array2::zeros((x_new.n[0], x_new.n[1]));
+        self.x = x_new.clone();
+        self.p = Pspace2D::init(x_new);
     }
 
     pub fn plot(&self, path: &str, colorbar_limits: [F; 2]) {
