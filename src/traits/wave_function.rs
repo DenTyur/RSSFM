@@ -23,6 +23,11 @@ pub trait ValueAndSpaceDerivatives<const D: usize> {
 /// Трейт для волновой функции.
 /// D задает размерность пространства.
 pub trait WaveFunction<const D: usize> {
+    type Xspace;
+
+    /// Расширяет сетку волновой функции нулями
+    fn extend(&mut self, x_new: &Self::Xspace);
+
     /// Вычисляет и обновляет производные
     fn update_derivatives(&mut self);
 
