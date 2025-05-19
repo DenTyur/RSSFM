@@ -1,10 +1,12 @@
 use super::space::{Pspace4D, Xspace4D};
 use crate::config::{C, F};
+use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
 use crate::macros::check_path;
 use crate::traits::wave_function::{ValueAndSpaceDerivatives, WaveFunction};
 use crate::utils::{heatmap, logcolormap};
 use ndarray::prelude::*;
 use ndarray::Array4;
+use ndarray::{Ix4, SliceInfo, SliceInfoElem};
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
@@ -43,11 +45,75 @@ impl WaveFunction4D {
         }
     }
 
-    pub fn plot_slice_log(&self, path: &str, colorbar_limits: [F; 2]) {
-        let mut a: Array2<F> = Array::zeros((self.x.n[0], self.x.n[1]));
+    pub fn plot_slice_log(
+        &self,
+        path: &str,
+        colorbar_limits: [F; 2],
+        fixed_values: [Option<F>; 4], // None означает ось, по которой берется срез
+    ) {
+        // Преобразуем значения координат в индексы
+        let fixed_indices: [Option<usize>; 4] = fixed_values.map(|val| {
+            val.map(|v| {
+                // Находим индекс для каждой оси
+                self.x
+                    .grid
+                    .iter()
+                    .enumerate()
+                    .find_map(|(axis, grid)| {
+                        if !grid.is_empty() {
+                            let x_min = grid.first().unwrap();
+                            let x_max = grid.last().unwrap();
 
-        self.psi
-            .slice(s![.., .., self.x.n[2] / 2 - 1, self.x.n[3] / 2 - 1])
+                            // Проверяем, что значение в пределах сетки
+                            if v < *x_min || v > *x_max {
+                                panic!(
+                                    "Value {} is out of bounds for axis {} (min: {}, max: {})",
+                                    v, axis, x_min, x_max
+                                );
+                            }
+
+                            // Аналитически вычисляем ближайший индекс
+                            let idx = ((v - *x_min) / self.x.dx[axis]).round() as usize;
+
+                            // Обеспечиваем, чтобы индекс был в допустимых пределах
+                            Some(idx.min(grid.len() - 1))
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("Failed to find index")
+            })
+        });
+
+        // Определяем, какие оси будут в срезе (те, для которых fixed_indices == None)
+        let slice_axes: Vec<usize> = fixed_indices
+            .iter()
+            .enumerate()
+            .filter(|(_, &idx)| idx.is_none())
+            .map(|(i, _)| i)
+            .collect();
+
+        // Проверяем, что срез двумерный
+        assert_eq!(slice_axes.len(), 2, "Slice must be 2D");
+
+        // Создаем срез
+        let slice = match fixed_indices {
+            [None, None, Some(z), Some(w)] => s![.., .., z, w],
+            [None, Some(y), None, Some(w)] => s![.., y, .., w],
+            [None, Some(y), Some(z), None] => s![.., y, z, ..],
+            [Some(x), None, None, Some(w)] => s![x, .., .., w],
+            [Some(x), None, Some(z), None] => s![x, .., z, ..],
+            [Some(x), Some(y), None, None] => s![x, y, .., ..],
+            _ => panic!("Invalid slice configuration - exactly two axes must be None"),
+        };
+
+        // Применяем срез к пси-функции
+        let sliced_psi = self.psi.slice(slice);
+
+        // Создаем массив для плотности вероятности
+        let shape: Vec<usize> = slice_axes.iter().map(|&axis| self.x.n[axis]).collect();
+        let mut a: Array2<F> = Array::zeros((shape[0], shape[1]));
+        sliced_psi
             .axis_iter(Axis(0))
             .zip(a.axis_iter_mut(Axis(0)))
             .par_bridge()
@@ -65,12 +131,94 @@ impl WaveFunction4D {
         check_path!(path);
         logcolormap::plot_heatmap_logscale(
             &a,
-            &self.x.grid[0],
-            &self.x.grid[1],
+            &self.x.grid[slice_axes[0]],
+            &self.x.grid[slice_axes[1]],
             (colorbar_min, colorbar_max),
             path,
         )
         .unwrap();
+    }
+
+    /// Возвращает волновую функцию центра масс
+    /// Для взаимодействующих электронов это не совсем правильно,
+    /// так как волновая функци не факторизуется на относительную в.ф.
+    /// и в.ф. центра масс.
+    pub fn get_psi_center_of_mass(&self) -> WaveFunction2D {
+        use std::collections::HashMap;
+        let d2x = self.x.dx[2] * self.x.dx[3];
+
+        // Сетка для центра масс (X, Y) совпадает с исходной
+        let X_grid = self.x.grid[0].clone();
+        let Y_grid = self.x.grid[1].clone();
+
+        // Массив для psi_cm(X, Y)
+        let mut psi_cm: Array2<C> = Array2::zeros((self.x.n[0], self.x.n[1]));
+
+        let tolerance: F = 1e-6;
+        // Предварительно строим HashMap для быстрого поиска индексов
+        let index_map: HashMap<_, _> = self.x.grid[0]
+            .iter()
+            .enumerate()
+            .map(|(i, &val)| (val.to_bits(), i))
+            .collect();
+
+        let get_index = |x: F| -> Option<usize> { index_map.get(&x.to_bits()).copied() };
+
+        psi_cm
+            .axis_iter_mut(Axis(0))
+            .into_par_iter()
+            .enumerate()
+            .for_each(|(i, mut row)| {
+                let X = X_grid[i];
+
+                for (j, psi_cm_ij) in row.iter_mut().enumerate() {
+                    let Y = Y_grid[j];
+                    let mut sum: C = C::new(0.0, 0.0);
+
+                    // Оптимизированный перебор по r_x и r_y
+                    for &delta_x in self.x.grid[0].iter() {
+                        let r_x = delta_x - self.x.grid[0][0];
+                        for sign_x in [-1.0, 1.0].iter() {
+                            let x1 = X + sign_x * r_x / 2.0;
+                            let x2 = X - sign_x * r_x / 2.0;
+
+                            let Some(x1_idx) = get_index(x1) else {
+                                continue;
+                            };
+                            let Some(x2_idx) = get_index(x2) else {
+                                continue;
+                            };
+
+                            for &delta_y in self.x.grid[1].iter() {
+                                let r_y = delta_y - self.x.grid[1][0];
+                                for sign_y in [-1.0, 1.0].iter() {
+                                    let y1 = Y + sign_y * r_y / 2.0;
+                                    let y2 = Y - sign_y * r_y / 2.0;
+
+                                    let Some(y1_idx) = get_index(y1) else {
+                                        continue;
+                                    };
+                                    let Some(y2_idx) = get_index(y2) else {
+                                        continue;
+                                    };
+
+                                    sum += self.psi[[x1_idx, y1_idx, x2_idx, y2_idx]];
+                                }
+                            }
+                        }
+                    }
+
+                    *psi_cm_ij = sum * self.x.dx[2] * self.x.dx[3] / 4.0;
+                }
+            });
+
+        let X_cm = Xspace2D {
+            x0: [X_grid[0], Y_grid[0]],
+            dx: [self.x.dx[0], self.x.dx[1]],
+            n: [X_grid.len(), Y_grid.len()],
+            grid: [X_grid, Y_grid],
+        };
+        WaveFunction2D::new(psi_cm, X_cm)
     }
 }
 

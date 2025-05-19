@@ -30,13 +30,13 @@ pub struct WaveFunction2D {
 impl WaveFunction2D {
     pub const DIM: usize = 2;
 
-    pub fn new(psi: Array2<C>, x: &Xspace2D) -> Self {
+    pub fn new(psi: Array2<C>, x: Xspace2D) -> Self {
         let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let p = Pspace2D::init(x);
+        let p = Pspace2D::init(&x);
         Self {
             psi,
-            x: x.clone(),
+            x,
             p,
             dpsi_dx,
             dpsi_dy,
