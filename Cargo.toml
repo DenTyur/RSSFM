@@ -8,26 +8,36 @@ readme = "README.md"
 name = "rssfm"
 path = "src/lib.rs"
 
+# ======================== Расчетные бинарники ========================================
+# br circular polarization + tsurff
 [[bin]]
 name = "br_2d_external"
-path = "src/out/br/dim2/external/br_2d_external.rs"
+path = "src/out/br_circular_polarization/dim2/external/br_2d_external.rs"
 
 [[bin]]
 name = "br_2d_inner"
-path = "src/out/br/dim2/inner/br_2d_inner.rs"
+path = "src/out/br_circular_polarization/dim2/inner/br_2d_inner.rs"
 
 [[bin]]
 name = "br_dimd"
-path = "src/out/br/dim2/ion_momentum_distribution/dimd.rs"
+path = "src/out/br_circular_polarization/dim2/ion_momentum_distribution/dimd.rs"
 
+# br linear polarization
+[[bin]]
+name = "br_1e1d_external"
+path = "src/out/br_linear_polarization/dim1/external/br_1e1d_external.rs"
+
+# тестировка 4d
 [[bin]]
 name = "main4d"
 path = "src/out/dim4/main4d.rs"
 
+# тестировка
 [[bin]]
 name = "main"
 path = "src/main.rs"
 
+# утилита для оценки памяти
 [[bin]]
 name = "memory"
 path = "src/bin/memory.rs"
@@ -43,6 +53,8 @@ plotters = "0.3.7"
 plotly = "0.12.1"
 colorous = "1.0.15"
 colorgrad = "0.6"
+hdf5 = "0.8.1"
+num-traits = "0.2.12"
 # GSL = "7.0.0"
 
 # [features]

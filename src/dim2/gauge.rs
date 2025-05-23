@@ -31,6 +31,7 @@ impl<'a> GaugedEvolutionSSFM<2> for VelocityGauge2D<'a> {
     fn x_evol_half(
         &self,
         wf: &mut WaveFunction2D,
+        _tcurrent: F,
         dt: F,
         potential: fn(x: [F; 2]) -> F,
         absorbing_potential: fn(x: [F; 2]) -> C,
@@ -52,6 +53,7 @@ impl<'a> GaugedEvolutionSSFM<2> for VelocityGauge2D<'a> {
     fn x_evol(
         &self,
         wf: &mut WaveFunction2D,
+        _tcurrent: F,
         dt: F,
         potential: fn(x: [F; 2]) -> F,
         absorbing_potential: fn(x: [F; 2]) -> C,

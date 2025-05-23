@@ -1,5 +1,6 @@
 mod common;
 mod config;
+mod dim1;
 mod dim2;
 mod dim4;
 mod macros;

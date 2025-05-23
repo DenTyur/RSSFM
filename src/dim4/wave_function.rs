@@ -1,9 +1,12 @@
 use super::space::{Pspace4D, Xspace4D};
-use crate::config::{C, F};
-use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
+use crate::config::{C, F, I};
+use crate::dim2::{fft_maker::FftMaker2D, space::Xspace2D, wave_function::WaveFunction2D};
+use crate::dim4::fft_maker::FftMaker4D;
 use crate::macros::check_path;
+use crate::traits::fft_maker::FftMaker;
 use crate::traits::wave_function::{ValueAndSpaceDerivatives, WaveFunction};
 use crate::utils::{heatmap, logcolormap};
+use itertools::multizip;
 use ndarray::prelude::*;
 use ndarray::Array4;
 use ndarray::{Ix4, SliceInfo, SliceInfoElem};
@@ -19,6 +22,10 @@ use std::io::BufWriter;
 /// раз, но это надо заморочиться).
 pub struct WaveFunction4D {
     pub psi: Array4<C>,
+    pub dpsi_d0: Array4<C>,
+    pub dpsi_d1: Array4<C>,
+    pub dpsi_d2: Array4<C>,
+    pub dpsi_d3: Array4<C>,
     pub x: Xspace4D,
     pub p: Pspace4D,
 }
@@ -27,9 +34,14 @@ impl WaveFunction4D {
     pub const DIM: usize = 4;
 
     pub fn new(psi: Array4<C>, x: &Xspace4D) -> Self {
+        let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
         let p = Pspace4D::init(x);
         Self {
             psi,
+            dpsi_d0: dpsi_d0.clone(),
+            dpsi_d1: dpsi_d0.clone(),
+            dpsi_d2: dpsi_d0.clone(),
+            dpsi_d3: dpsi_d0,
             x: x.clone(),
             p,
         }
@@ -37,9 +49,14 @@ impl WaveFunction4D {
 
     pub fn init_from_npy(psi_path: &str, x: Xspace4D) -> Self {
         let reader = File::open(psi_path).unwrap();
+        let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
         let p = Pspace4D::init(&x);
         Self {
             psi: Array::<C, Ix4>::read_npy(reader).unwrap(),
+            dpsi_d0: dpsi_d0.clone(),
+            dpsi_d1: dpsi_d0.clone(),
+            dpsi_d2: dpsi_d0.clone(),
+            dpsi_d3: dpsi_d0,
             x,
             p,
         }
@@ -224,7 +241,23 @@ impl WaveFunction4D {
 
 impl ValueAndSpaceDerivatives<4> for WaveFunction4D {
     fn deriv(&self, x: [F; Self::DIM]) -> [C; Self::DIM] {
-        unimplemented!("This method is not implemented yet");
+        // unimplemented!("This method is not implemented yet");
+        // нахождение индексов ближайших к окружности узлов сетки
+        let x0_min = self.x.grid[0][[0]];
+        let x1_min = self.x.grid[1][[0]];
+        let x2_min = self.x.grid[2][[0]];
+        let x3_min = self.x.grid[3][[0]];
+        let ix0 = ((x[0] - x0_min) / self.x.dx[0]).round() as usize;
+        let ix1 = ((x[1] - x1_min) / self.x.dx[1]).round() as usize;
+        let ix2 = ((x[2] - x2_min) / self.x.dx[2]).round() as usize;
+        let ix3 = ((x[3] - x3_min) / self.x.dx[3]).round() as usize;
+        // возвращаем производную
+        [
+            self.dpsi_d0[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d1[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d2[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d3[(ix0, ix1, ix2, ix3)],
+        ]
     }
 
     fn value(&self, x: [F; Self::DIM]) -> C {
@@ -294,7 +327,15 @@ impl WaveFunction<4> for WaveFunction4D {
     }
 
     fn update_derivatives(&mut self) {
-        unimplemented!("This method is not implemented yet");
+        // unimplemented!("This method is not implemented yet");
+        self.dpsi_d0 = self.psi.clone();
+        self.dpsi_d1 = self.psi.clone();
+        self.dpsi_d2 = self.psi.clone();
+        self.dpsi_d3 = self.psi.clone();
+        fft_dpsi_d0(&mut self.dpsi_d0, &self.x, &self.p);
+        fft_dpsi_d1(&mut self.dpsi_d1, &self.x, &self.p);
+        fft_dpsi_d2(&mut self.dpsi_d2, &self.x, &self.p);
+        fft_dpsi_d3(&mut self.dpsi_d3, &self.x, &self.p);
     }
 
     fn prob_in_numerical_box(&self) -> F {
@@ -318,4 +359,114 @@ impl WaveFunction<4> for WaveFunction4D {
         self.psi.write_npy(writer)?;
         Ok(())
     }
+}
+//============================================================================================
+/// спектральные производные
+
+pub fn fft_dpsi_d0(psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+    let mut fft_maker = FftMaker4D::new(&x.n);
+    fft_maker.modify(psi, x, p);
+    fft_maker.fft(psi);
+
+    multizip((psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_3d, p0_point)| {
+            multizip((psi_3d.axis_iter_mut(Axis(0)), p.grid[1].iter())).for_each(
+                |(mut psi_2d, _p1_point)| {
+                    multizip((psi_2d.axis_iter_mut(Axis(0)), p.grid[2].iter())).for_each(
+                        |(mut psi_1d, _p2_point)| {
+                            multizip((psi_1d.iter_mut(), p.grid[3].iter())).for_each(
+                                |(elem, _p3_point)| {
+                                    *elem *= I * p0_point;
+                                },
+                            );
+                        },
+                    );
+                },
+            );
+        });
+
+    fft_maker.ifft(psi);
+    fft_maker.demodify(psi, x, p);
+}
+
+pub fn fft_dpsi_d1(psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+    let mut fft_maker = FftMaker4D::new(&x.n);
+    fft_maker.modify(psi, x, p);
+    fft_maker.fft(psi);
+
+    multizip((psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_3d, _p0_point)| {
+            multizip((psi_3d.axis_iter_mut(Axis(0)), p.grid[1].iter())).for_each(
+                |(mut psi_2d, p1_point)| {
+                    multizip((psi_2d.axis_iter_mut(Axis(0)), p.grid[2].iter())).for_each(
+                        |(mut psi_1d, _p2_point)| {
+                            multizip((psi_1d.iter_mut(), p.grid[3].iter())).for_each(
+                                |(elem, _p3_point)| {
+                                    *elem *= I * p1_point;
+                                },
+                            );
+                        },
+                    );
+                },
+            );
+        });
+
+    fft_maker.ifft(psi);
+    fft_maker.demodify(psi, x, p);
+}
+
+pub fn fft_dpsi_d2(psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+    let mut fft_maker = FftMaker4D::new(&x.n);
+    fft_maker.modify(psi, x, p);
+    fft_maker.fft(psi);
+
+    multizip((psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_3d, _p0_point)| {
+            multizip((psi_3d.axis_iter_mut(Axis(0)), p.grid[1].iter())).for_each(
+                |(mut psi_2d, _p1_point)| {
+                    multizip((psi_2d.axis_iter_mut(Axis(0)), p.grid[2].iter())).for_each(
+                        |(mut psi_1d, p2_point)| {
+                            multizip((psi_1d.iter_mut(), p.grid[3].iter())).for_each(
+                                |(elem, _p3_point)| {
+                                    *elem *= I * p2_point;
+                                },
+                            );
+                        },
+                    );
+                },
+            );
+        });
+
+    fft_maker.ifft(psi);
+    fft_maker.demodify(psi, x, p);
+}
+
+pub fn fft_dpsi_d3(psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+    let mut fft_maker = FftMaker4D::new(&x.n);
+    fft_maker.modify(psi, x, p);
+    fft_maker.fft(psi);
+
+    multizip((psi.axis_iter_mut(Axis(0)), p.grid[0].iter()))
+        .par_bridge()
+        .for_each(|(mut psi_3d, _p0_point)| {
+            multizip((psi_3d.axis_iter_mut(Axis(0)), p.grid[1].iter())).for_each(
+                |(mut psi_2d, _p1_point)| {
+                    multizip((psi_2d.axis_iter_mut(Axis(0)), p.grid[2].iter())).for_each(
+                        |(mut psi_1d, _p2_point)| {
+                            multizip((psi_1d.iter_mut(), p.grid[3].iter())).for_each(
+                                |(elem, p3_point)| {
+                                    *elem *= I * p3_point;
+                                },
+                            );
+                        },
+                    );
+                },
+            );
+        });
+
+    fft_maker.ifft(psi);
+    fft_maker.demodify(psi, x, p);
 }

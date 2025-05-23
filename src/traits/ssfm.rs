@@ -10,6 +10,7 @@ pub trait GaugedEvolutionSSFM<const D: usize> {
     fn x_evol_half(
         &self,
         psi: &mut Self::WF,
+        tcurrent: F,
         dt: F,
         potential: fn(x: [F; D]) -> F,
         absorbing_potential: fn(x: [F; D]) -> C,
@@ -20,6 +21,7 @@ pub trait GaugedEvolutionSSFM<const D: usize> {
     fn x_evol(
         &self,
         psi: &mut Self::WF,
+        tcurrent: F,
         dt: F,
         potential: fn(x: [F; D]) -> F,
         absorbing_potential: fn(x: [F; D]) -> C,

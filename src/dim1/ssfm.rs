@@ -1,33 +1,33 @@
-use super::fft_maker::FftMaker4D;
-use super::space::Xspace4D;
-use super::wave_function::WaveFunction4D;
+use super::fft_maker::FftMaker1D;
+use super::space::Xspace1D;
+use super::wave_function::WaveFunction1D;
 use crate::common::tspace::Tspace;
 use crate::config::{C, F};
 use crate::traits::fft_maker::FftMaker;
 use crate::traits::ssfm::{GaugedEvolutionSSFM, SSFM};
 use crate::traits::wave_function::WaveFunction;
 
-pub struct SSFM4D<'a, G>
+pub struct SSFM1D<'a, G>
 where
-    G: GaugedEvolutionSSFM<4, WF = WaveFunction4D>,
+    G: GaugedEvolutionSSFM<1, WF = WaveFunction1D>,
 {
-    potential: fn([F; 4]) -> F,
-    absorbing_potential: fn([F; 4]) -> C,
+    potential: fn([F; 1]) -> F,
+    absorbing_potential: fn([F; 1]) -> C,
     gauge: &'a G,
-    fft_maker: FftMaker4D,
+    fft_maker: FftMaker1D,
 }
 
-impl<'a, G> SSFM4D<'a, G>
+impl<'a, G> SSFM1D<'a, G>
 where
-    G: GaugedEvolutionSSFM<4, WF = WaveFunction4D>,
+    G: GaugedEvolutionSSFM<1, WF = WaveFunction1D>,
 {
     pub fn new(
         gauge: &'a G,
-        x: &Xspace4D,
-        potential: fn([F; 4]) -> F,
-        absorbing_potential: fn([F; 4]) -> C,
+        x: &Xspace1D,
+        potential: fn([F; 1]) -> F,
+        absorbing_potential: fn([F; 1]) -> C,
     ) -> Self {
-        let fft_maker = FftMaker4D::new(&x.n);
+        let fft_maker = FftMaker1D::new(&x.n);
         Self {
             gauge,
             fft_maker,
@@ -38,15 +38,15 @@ where
 }
 
 /// Реализация эволюции на временной шаг методом SSFM
-impl<'a, G> SSFM for SSFM4D<'a, G>
+impl<'a, G> SSFM for SSFM1D<'a, G>
 where
-    G: GaugedEvolutionSSFM<4, WF = WaveFunction4D>,
+    G: GaugedEvolutionSSFM<1, WF = WaveFunction1D>,
 {
-    type WF = WaveFunction4D;
+    type WF = WaveFunction1D;
 
     fn time_step_evol(
         &mut self,
-        wf: &mut WaveFunction4D,
+        wf: &mut WaveFunction1D,
         t: &mut Tspace,
         psi_p_save_path: Option<&str>,
     ) {

@@ -1,3 +1,4 @@
+use super::space::{Pspace4D, Xspace4D};
 use super::wave_function::WaveFunction4D;
 use crate::config::{C, F, I, PI};
 use crate::traits::fft_maker::FftMaker;
@@ -36,6 +37,59 @@ impl FftMaker4D {
         ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[1], 1);
         ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[2], 2);
         ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[3], 3);
+    }
+
+    pub fn modify(&mut self, psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+        multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            .par_bridge()
+            .for_each(|(mut psi_3d, x0_point)| {
+                multizip((psi_3d.axis_iter_mut(Axis(0)), x.grid[1].iter())).for_each(
+                    |(mut psi_2d, x1_point)| {
+                        multizip((psi_2d.axis_iter_mut(Axis(0)), x.grid[2].iter())).for_each(
+                            |(mut psi_1d, x2_point)| {
+                                multizip((psi_1d.iter_mut(), x.grid[3].iter())).for_each(
+                                    |(psi_elem, x3_point)| {
+                                        *psi_elem *= x.dx[0] * x.dx[1] * x.dx[2] * x.dx[3]
+                                            / (2. * PI).powi(2)
+                                            * (-I
+                                                * (p.p0[0] * *x0_point
+                                                    + p.p0[1] * *x1_point
+                                                    + p.p0[2] * *x2_point
+                                                    + p.p0[3] * *x3_point))
+                                                .exp();
+                                    },
+                                );
+                            },
+                        );
+                    },
+                );
+            });
+    }
+
+    pub fn demodify(&mut self, psi: &mut Array4<C>, x: &Xspace4D, p: &Pspace4D) {
+        multizip((psi.axis_iter_mut(Axis(0)), x.grid[0].iter()))
+            .par_bridge()
+            .for_each(|(mut psi_3d, x0_point)| {
+                multizip((psi_3d.axis_iter_mut(Axis(0)), x.grid[1].iter())).for_each(
+                    |(mut psi_2d, x1_point)| {
+                        multizip((psi_2d.axis_iter_mut(Axis(0)), x.grid[2].iter())).for_each(
+                            |(mut psi_1d, x2_point)| {
+                                multizip((psi_1d.iter_mut(), x.grid[3].iter())).for_each(
+                                    |(elem, x3_point)| {
+                                        *elem *= (2. * PI).powi(2)
+                                            / (x.dx[0] * x.dx[1] * x.dx[2] * x.dx[3])
+                                            * (I * (p.p0[0] * *x0_point
+                                                + p.p0[1] * *x1_point
+                                                + p.p0[2] * *x2_point
+                                                + p.p0[3] * *x3_point))
+                                                .exp();
+                                    },
+                                );
+                            },
+                        );
+                    },
+                );
+            });
     }
 }
 

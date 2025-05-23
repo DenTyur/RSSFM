@@ -31,6 +31,7 @@ impl<'a> GaugedEvolutionSSFM<4> for VelocityGauge4D<'a> {
     fn x_evol_half(
         &self,
         wf: &mut WaveFunction4D,
+        _tcurrent: F,
         dt: F,
         potential: fn(x: [F; 4]) -> F,
         absorbing_potential: fn(x: [F; 4]) -> C,
@@ -66,6 +67,7 @@ impl<'a> GaugedEvolutionSSFM<4> for VelocityGauge4D<'a> {
     fn x_evol(
         &self,
         wf: &mut WaveFunction4D,
+        _tcurrent: F,
         dt: F,
         potential: fn(x: [F; 4]) -> F,
         absorbing_potential: fn(x: [F; 4]) -> C,

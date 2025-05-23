@@ -25,4 +25,8 @@ fn main() {
     let pspace = xspace.clone();
     let memory_ssfm: f64 = (wf + temp_wf + xspace + pspace) as f64 / bytes_to_gb as f64;
     println!("memory_ssfm = {} Gb", memory_ssfm);
+    let psi_derives = wf * dim as i64;
+    let a = n.pow(dim);
+    let memory_ssfm_and_tsurff = memory_ssfm + (psi_derives as f64 + a as f64) / bytes_to_gb as f64;
+    println!("memory_ssfm_and_tsurff = {} Gb", memory_ssfm_and_tsurff);
 }

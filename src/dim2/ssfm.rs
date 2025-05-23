@@ -51,16 +51,26 @@ where
         psi_p_save_path: Option<&str>,
     ) {
         self.fft_maker.modify_psi(wf);
-        self.gauge
-            .x_evol_half(wf, t.dt, self.potential, self.absorbing_potential);
+        self.gauge.x_evol_half(
+            wf,
+            t.current,
+            t.dt,
+            self.potential,
+            self.absorbing_potential,
+        );
 
         for _i in 0..t.n_steps - 1 {
             self.fft_maker.do_fft(wf);
             // Можно оптимизировать p_evol
             self.gauge.p_evol(wf, t.current, t.dt);
             self.fft_maker.do_ifft(wf);
-            self.gauge
-                .x_evol(wf, t.dt, self.potential, self.absorbing_potential);
+            self.gauge.x_evol(
+                wf,
+                t.current,
+                t.dt,
+                self.potential,
+                self.absorbing_potential,
+            );
             t.current += t.dt;
         }
 
@@ -70,8 +80,13 @@ where
             wf.save_as_npy(path).unwrap();
         }
         self.fft_maker.do_ifft(wf);
-        self.gauge
-            .x_evol_half(wf, t.dt, self.potential, self.absorbing_potential);
+        self.gauge.x_evol_half(
+            wf,
+            t.current,
+            t.dt,
+            self.potential,
+            self.absorbing_potential,
+        );
         self.fft_maker.demodify_psi(wf);
         t.current += t.dt;
     }

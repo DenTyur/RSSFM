@@ -6,6 +6,8 @@ pub mod potentials;
 mod tests;
 pub mod utils;
 
+pub mod dim1;
+
 // #[cfg(feature = "dim2")]
 pub mod dim2;
 // #[cfg(feature = "dim2")]
