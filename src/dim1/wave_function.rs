@@ -198,7 +198,7 @@ impl WaveFunction1D {
                     .iter()
                     .zip(self.psi.iter())
                     .map(|(&x, &y)| (x, y.norm())),
-                BLUE.stroke_width(2),
+                BLUE.stroke_width(1),
             ))
             .unwrap();
     }

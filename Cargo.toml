@@ -32,6 +32,11 @@ path = "src/out/br_linear_polarization/dim1/external/br_1e1d_external.rs"
 name = "main4d"
 path = "src/out/dim4/main4d.rs"
 
+# тестировка 1d
+[[bin]]
+name = "main1d"
+path = "src/out/dim1/main1d.rs"
+
 # тестировка
 [[bin]]
 name = "main"
