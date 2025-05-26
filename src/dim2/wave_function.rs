@@ -8,6 +8,7 @@ use crate::traits::{
     fft_maker::FftMaker,
     wave_function::{ValueAndSpaceDerivatives, WaveFunction},
 };
+use crate::utils::hdf5_interface;
 use crate::utils::{heatmap, logcolormap};
 use itertools::multizip;
 use ndarray::prelude::*;
@@ -49,8 +50,42 @@ impl WaveFunction2D {
         let reader = File::open(psi_path).unwrap();
         let p = Pspace2D::init(&x);
         Self {
-            psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
+            psi: Array::<C, Ix2>::read_npy(reader)
+                .unwrap()
+                .mapv_into(|x| x as C), // преобразуем в нужный тип данных
             x,
+            p,
+            dpsi_dx,
+            dpsi_dy,
+        }
+    }
+
+    pub fn init_from_hdf5(psi_path: &str) -> Self {
+        let psi: Array2<C> =
+            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
+                .unwrap()
+                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
+        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let dx0 = x0[[1]] - x0[[0]];
+        let dx1 = x1[[1]] - x1[[0]];
+        let xspace = Xspace2D {
+            x0: [x0[[0]], x1[[0]]],
+            dx: [dx0, dx1],
+            n: [x0.len(), x1.len()],
+            grid: [x0, x1],
+        };
+
+        let p = Pspace2D::init(&xspace);
+        let dpsi_dx: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
+        let dpsi_dy: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
+        Self {
+            psi,
+            x: xspace,
             p,
             dpsi_dx,
             dpsi_dy,

@@ -43,7 +43,7 @@ impl Space<2> for Xspace2D {
         for i in 0..Self::DIM {
             let x_path = String::from(dir_path) + "/" + Self::PREFIX + format!("{i}.npy").as_str();
             let reader = File::open(x_path).unwrap();
-            grid[i] = Array1::<F>::read_npy(reader).unwrap();
+            grid[i] = Array1::read_npy(reader).unwrap().mapv_into(|x| x as F); // преобразуем в нужный тип данных
             x0[i] = grid[i][[0]];
             dx[i] = grid[i][[1]] - grid[i][[0]];
             n[i] = grid[i].len();
