@@ -27,6 +27,10 @@ path = "src/out/br_circular_polarization/dim2/ion_momentum_distribution/dimd.rs"
 name = "br_1e1d_external"
 path = "src/out/br_linear_polarization/dim1/external/br_1e1d_external.rs"
 
+[[bin]]
+name = "br_1e1d_inner"
+path = "src/out/br_linear_polarization/dim1/inner/br_1e1d_inner.rs"
+
 # тестировка 4d
 [[bin]]
 name = "main4d"
