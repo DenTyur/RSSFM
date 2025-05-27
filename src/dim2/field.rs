@@ -53,9 +53,9 @@ impl Field2D {
         ]
     }
 
-    pub fn scalar_potential(&self, t: F, x: F, y: F) -> F {
-        -self.electric_field_time_dependence(t)[0] * x
-            - self.electric_field_time_dependence(t)[1] * y
+    pub fn scalar_potential(&self, t: F, x: [F; 2]) -> F {
+        -self.electric_field_time_dependence(t)[0] * x[0]
+            - self.electric_field_time_dependence(t)[1] * x[1]
     }
 
     // Векторный потенциал

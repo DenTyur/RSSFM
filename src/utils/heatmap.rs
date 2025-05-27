@@ -1,3 +1,4 @@
+use crate::config::F;
 use colorous::{Gradient, BLUES, TURBO};
 use ndarray::{prelude::*, stack, Zip};
 use plotters::{coord::types::RangedCoordf32, prelude::*};
@@ -13,13 +14,13 @@ fn filled_style<C: Into<RGBAColor>>(color: C) -> ShapeStyle {
 }
 
 struct Colorbar {
-    min: f32,
-    max: f32,
+    min: F,
+    max: F,
     gradient: Gradient,
 }
 
 impl Colorbar {
-    fn color(&self, value: f32) -> RGBColor {
+    fn color(&self, value: F) -> RGBColor {
         let &Self {
             min,
             max,
@@ -32,7 +33,7 @@ impl Colorbar {
         RGBColor(r, g, b)
     }
 
-    fn color_log(&self, value: f32) -> RGBColor {
+    fn color_log(&self, value: F) -> RGBColor {
         let &Self {
             min,
             max,
@@ -98,9 +99,9 @@ fn meshgrid<A: Clone>(x: &Array1<A>, y: &Array1<A>) -> (Array2<A>, Array2<A>) {
 }
 
 fn heatmap<'a, 'b, 'c, DB: DrawingBackend>(
-    function: &Array2<f32>,
-    x_arr: &Array1<f32>,
-    y_arr: &Array1<f32>,
+    function: &Array2<F>,
+    x_arr: &Array1<F>,
+    y_arr: &Array1<F>,
     colorbar: &Colorbar,
     text_color: RGBAColor,
     mut chart_builder: ChartBuilder<'b, 'c, DB>,
@@ -149,14 +150,14 @@ fn heatmap<'a, 'b, 'c, DB: DrawingBackend>(
 }
 
 pub fn plot_heatmap(
-    x_arr: &Array1<f32>,
-    y_arr: &Array1<f32>,
-    func: &Array2<f32>,
+    x_arr: &Array1<F>,
+    y_arr: &Array1<F>,
+    func: &Array2<F>,
     size_x: u32,
     size_y: u32,
     size_colorbar: u32,
-    colorbar_min: f32,
-    colorbar_max: f32,
+    colorbar_min: F,
+    colorbar_max: F,
     save_path: &str,
 ) {
     let drawing_area =
@@ -202,8 +203,8 @@ fn test_heatmap() {
     )
 }
 
-fn function(x_arr: &Array1<f32>, y_arr: &Array1<f32>) -> Array2<f32> {
-    let mut function: Array2<f32> = Array::zeros((x_arr.len(), y_arr.len()));
+fn function(x_arr: &Array1<F>, y_arr: &Array1<F>) -> Array2<F> {
+    let mut function: Array2<F> = Array::zeros((x_arr.len(), y_arr.len()));
     function
         .axis_iter_mut(Axis(0))
         .zip(x_arr.iter())

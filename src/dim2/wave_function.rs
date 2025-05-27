@@ -44,15 +44,39 @@ impl WaveFunction2D {
         }
     }
 
+    // // Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
+    pub fn init_oscillator_2d(x: Xspace2D) -> Self {
+        let mut psi: Array<C, Ix2> = Array::zeros((x.n[0], x.n[1]));
+        psi.axis_iter_mut(Axis(0))
+            .zip(x.grid[0].iter())
+            .par_bridge()
+            .for_each(|(mut psi_row, x_i)| {
+                psi_row
+                    .iter_mut()
+                    .zip(x.grid[1].iter())
+                    .for_each(|(psi_elem, y_j)| {
+                        *psi_elem = (-0.5 * (x_i.powi(2) + y_j.powi(2))).exp() + 0. * I;
+                    })
+            });
+        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
+        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
+        let p = Pspace2D::init(&x);
+        Self {
+            psi,
+            x,
+            p,
+            dpsi_dx,
+            dpsi_dy,
+        }
+    }
+
     pub fn init_from_npy(psi_path: &str, x: Xspace2D) -> Self {
         let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let reader = File::open(psi_path).unwrap();
         let p = Pspace2D::init(&x);
         Self {
-            psi: Array::<C, Ix2>::read_npy(reader)
-                .unwrap()
-                .mapv_into(|x| x as C), // преобразуем в нужный тип данных
+            psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
             x,
             p,
             dpsi_dx,
@@ -191,31 +215,51 @@ impl WaveFunction<2> for WaveFunction2D {
             "Шаг x2 должен совпадать"
         );
 
-        // Проверяем, что новые оси содержат старые
+        // Определяем область пересечения старых и новых координат
+        let x_start = self.x.grid[0][0].max(x_new.grid[0][0]);
+        let x_end = self.x.grid[0][self.x.n[0] - 1].min(x_new.grid[0][x_new.n[0] - 1]);
+
+        let y_start = self.x.grid[1][0].max(x_new.grid[1][0]);
+        let y_end = self.x.grid[1][self.x.n[1] - 1].min(x_new.grid[1][x_new.n[1] - 1]);
+
+        // Проверяем, что есть пересечение
         assert!(
-            x_new.grid[0][0] <= self.x.grid[0][0]
-                && x_new.grid[0][x_new.n[0] - 1] >= self.x.grid[0][self.x.n[0] - 1],
-            "x1_new должна содержать x1"
+            x_start <= x_end,
+            "Нет пересечения между старой и новой сеткой x"
         );
         assert!(
-            x_new.grid[1][0] <= self.x.grid[1][0]
-                && x_new.grid[1][x_new.n[1] - 1] >= self.x.grid[1][self.x.n[1] - 1],
-            "x2_new должна содержать x2"
+            y_start <= y_end,
+            "Нет пересечения между старой и новой сеткой y"
         );
 
         // Создаем новый массив, заполненный нулями
         let mut psi_new: Array2<C> = Array2::zeros((x_new.n[0], x_new.n[1]));
 
-        // Находим индексы, куда нужно вставить старый массив
-        let x1_start = ((self.x.grid[0][0] - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
-        let x1_end = x1_start + self.x.n[0];
+        // Находим индексы в новой сетке, куда нужно вставить данные
+        let x_new_start_idx = ((x_start - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
+        let x_new_end_idx = ((x_end - x_new.grid[0][0]) / x_new.dx[0]).round() as usize + 1;
 
-        let x2_start = ((self.x.grid[1][0] - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
-        let x2_end = x2_start + self.x.n[1];
+        let y_new_start_idx = ((y_start - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
+        let y_new_end_idx = ((y_end - x_new.grid[1][0]) / x_new.dx[1]).round() as usize + 1;
+
+        // Находим индексы в старой сетке, откуда брать данные
+        let x_old_start_idx = ((x_start - self.x.grid[0][0]) / self.x.dx[0]).round() as usize;
+        let x_old_end_idx = ((x_end - self.x.grid[0][0]) / self.x.dx[0]).round() as usize + 1;
+
+        let y_old_start_idx = ((y_start - self.x.grid[1][0]) / self.x.dx[1]).round() as usize;
+        let y_old_end_idx = ((y_end - self.x.grid[1][0]) / self.x.dx[1]).round() as usize + 1;
 
         // Вставляем старые данные в новый массив
-        let mut psi_slice = psi_new.slice_mut(s![x1_start..x1_end, x2_start..x2_end]);
-        psi_slice.assign(&self.psi);
+        // Копируем данные из старого массива в новый
+        let mut new_slice = psi_new.slice_mut(s![
+            x_new_start_idx..x_new_end_idx,
+            y_new_start_idx..y_new_end_idx
+        ]);
+        let old_slice = self.psi.slice(s![
+            x_old_start_idx..x_old_end_idx,
+            y_old_start_idx..y_old_end_idx
+        ]);
+        new_slice.assign(&old_slice);
 
         // Обновляем все поля
         self.psi = psi_new;
@@ -259,6 +303,7 @@ impl WaveFunction<2> for WaveFunction2D {
     }
 
     fn save_as_npy(&self, path: &str) -> Result<(), WriteNpyError> {
+        check_path!(path);
         let writer = BufWriter::new(File::create(path)?);
         self.psi.write_npy(writer)?;
         Ok(())

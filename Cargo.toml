@@ -42,6 +42,11 @@ path = "src/out/dim1/main1d.rs"
 name = "main2d"
 path = "src/out/dim2/main2d.rs"
 
+# осциллятор 2d
+[[bin]]
+name = "oscillator2d"
+path = "src/out/dim2/oscillator/oscillator2d.rs"
+
 # тестировка
 [[bin]]
 name = "main"

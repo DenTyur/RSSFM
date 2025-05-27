@@ -103,3 +103,75 @@ impl<'a> LenthGauge2D<'a> {
         Self { field }
     }
 }
+
+//=====================================SSFM========================================
+/// Эволюция для SSFM в калибровке длины
+impl<'a> GaugedEvolutionSSFM<2> for LenthGauge2D<'a> {
+    type WF = WaveFunction2D;
+
+    fn x_evol_half(
+        &self,
+        wf: &mut WaveFunction2D,
+        tcurrent: F,
+        dt: F,
+        potential: fn(x: [F; 2]) -> F,
+        absorbing_potential: fn(x: [F; 2]) -> C,
+    ) {
+        multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
+            .par_bridge()
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), wf.x.grid[1].iter())).for_each(
+                    |(psi_elem, y_point)| {
+                        let potential_elem = potential([*x_point, *y_point]);
+                        let absorbing_potential_elem = absorbing_potential([*x_point, *y_point]);
+                        let scalar_potential_elem =
+                            self.field.scalar_potential(tcurrent, [*x_point, *y_point]);
+                        *psi_elem *= (-I
+                            * 0.5
+                            * dt
+                            * (potential_elem + absorbing_potential_elem - scalar_potential_elem))
+                            .exp();
+                    },
+                );
+            });
+    }
+
+    fn x_evol(
+        &self,
+        wf: &mut WaveFunction2D,
+        tcurrent: F,
+        dt: F,
+        potential: fn(x: [F; 2]) -> F,
+        absorbing_potential: fn(x: [F; 2]) -> C,
+    ) {
+        multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
+            .par_bridge()
+            .for_each(|(mut psi_row, x_point)| {
+                multizip((psi_row.iter_mut(), wf.x.grid[1].iter())).for_each(
+                    |(psi_elem, y_point)| {
+                        let potential_elem = potential([*x_point, *y_point]);
+                        let absorbing_potential_elem = absorbing_potential([*x_point, *y_point]);
+                        let scalar_potential_elem =
+                            self.field.scalar_potential(tcurrent, [*x_point, *y_point]);
+                        *psi_elem *= (-I
+                            * dt
+                            * (potential_elem + absorbing_potential_elem - scalar_potential_elem))
+                            .exp();
+                    },
+                );
+            });
+    }
+
+    fn p_evol(&self, wf: &mut WaveFunction2D, tcurrent: F, dt: F) {
+        multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
+            .par_bridge()
+            .for_each(|(mut psi_row, px)| {
+                psi_row
+                    .iter_mut()
+                    .zip(wf.p.grid[1].iter())
+                    .for_each(|(psi_elem, py)| {
+                        *psi_elem *= (-I * dt * (0.5 * px * px + 0.5 * py * py)).exp();
+                    });
+            });
+    }
+}

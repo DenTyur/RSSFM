@@ -1,13 +1,14 @@
+use crate::config::F;
 use ndarray::{Array1, Array2};
 use plotters::coord::Shift;
 use plotters::drawing::DrawingAreaErrorKind;
 use plotters::prelude::*;
 
 pub fn plot_heatmap_logscale(
-    func: &Array2<f32>,
-    x: &Array1<f32>,
-    y: &Array1<f32>,
-    color_limits: (f32, f32),
+    func: &Array2<F>,
+    x: &Array1<F>,
+    y: &Array1<F>,
+    color_limits: (F, F),
     output_path: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     // Проверка размеров массивов
@@ -22,10 +23,10 @@ pub fn plot_heatmap_logscale(
     root.fill(&WHITE)?;
 
     // Определение пределов осей
-    let x_min = x.iter().cloned().fold(f32::INFINITY, f32::min);
-    let x_max = x.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-    let y_min = y.iter().cloned().fold(f32::INFINITY, f32::min);
-    let y_max = y.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+    let x_min = x.iter().cloned().fold(F::INFINITY, F::min);
+    let x_max = x.iter().cloned().fold(F::NEG_INFINITY, F::max);
+    let y_min = y.iter().cloned().fold(F::INFINITY, F::min);
+    let y_max = y.iter().cloned().fold(F::NEG_INFINITY, F::max);
 
     // Создание графика с основным area и area для colorbar
     let (main_area, colorbar_area) = root.split_horizontally(790);
@@ -83,7 +84,7 @@ pub fn plot_heatmap_logscale(
 
 // fn draw_colorbar<DB: DrawingBackend>(
 //     area: DrawingArea<DB, Shift>,
-//     range: std::ops::Range<f32>,
+//     range: std::ops::Range<F>,
 //     palette: &colorgrad::Gradient,
 //     label: &str,
 // ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
@@ -98,7 +99,7 @@ pub fn plot_heatmap_logscale(
 //     chart.configure_mesh().x_desc(label).draw()?;
 //
 //     let step = (range.end - range.start) / 100.0;
-//     for y in (0..100).map(|i| range.start + i as f32 * step) {
+//     for y in (0..100).map(|i| range.start + i as F * step) {
 //         let normalized = ((y - range.start) / (range.end - range.start)).clamp(0.0, 1.0);
 //         let color = palette.at(normalized as f64).to_rgba8();
 //         let rgb = RGBColor(color[0], color[1], color[2]);
@@ -115,7 +116,7 @@ pub fn plot_heatmap_logscale(
 //
 // fn draw_colorbar<DB: DrawingBackend>(
 //     area: DrawingArea<DB, Shift>,
-//     range: std::ops::Range<f32>,
+//     range: std::ops::Range<F>,
 //     palette: &colorgrad::Gradient,
 //     label: &str,
 // ) -> Result<(), DrawingAreaErrorKind<DB::ErrorType>>
@@ -169,7 +170,7 @@ pub fn plot_heatmap_logscale(
 //
 //     // Рисуем цветовую шкалу
 //     let step = (range.end - range.start) / 100.0;
-//     for y in (0..100).map(|i| range.start + i as f32 * step) {
+//     for y in (0..100).map(|i| range.start + i as F * step) {
 //         let normalized = ((y - range.start) / (range.end - range.start)).clamp(0.0, 1.0);
 //         let color = palette.at(normalized as f64).to_rgba8();
 //         let rgb = RGBColor(color[0], color[1], color[2]);
@@ -182,14 +183,14 @@ pub fn plot_heatmap_logscale(
 // }
 //
 // /// Рассчитывает позиции основных делений для логарифмической шкалы
-// fn calculate_ticks(min: f32, max: f32) -> Vec<f32> {
+// fn calculate_ticks(min: F, max: F) -> Vec<F> {
 //     let min_exp = min.log10().floor() as i32;
 //     let max_exp = max.log10().ceil() as i32;
 //
 //     let mut major_ticks = Vec::new();
 //
 //     for exp in min_exp..=max_exp {
-//         let base = 10f32.powi(exp);
+//         let base = 10F.powi(exp);
 //         major_ticks.push(base.ln());
 //     }
 //
