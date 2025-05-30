@@ -40,7 +40,6 @@ impl Space<1> for Xspace1D {
 
         let i = 0_usize;
         let x_path = String::from(dir_path) + "/" + Self::PREFIX + format!("{i}.npy").as_str();
-        println!("{:?}", x_path);
         let reader = File::open(x_path).unwrap();
         grid[i] = Array1::read_npy(reader).unwrap();
         x0[i] = grid[i][[0]];

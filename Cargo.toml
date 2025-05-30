@@ -31,6 +31,11 @@ path = "src/out/br_linear_polarization/dim1/external/br_1e1d_external.rs"
 name = "br_1e1d_inner"
 path = "src/out/br_linear_polarization/dim1/inner/br_1e1d_inner.rs"
 
+[[bin]]
+name = "br_2e1d_sym_nonint_wf"
+path = "src/out/br_linear_polarization/dim1/sym_nonint_wf2e1d/br_2e1d_sym_nonint_wf.rs"
+
+
 # тестировка 4d
 [[bin]]
 name = "main4d"
