@@ -26,15 +26,33 @@ pub struct IonizProb1D<const N: usize> {
     pub x_surf: [F; N],
     pub ioniz_prob: [Vec<F>; N],
     pub x: Xspace1D,
+    pub t: Tspace,
 }
 
 impl<const N: usize> IonizProb1D<N> {
-    pub fn new(x_surf: [F; N], x: Xspace1D) -> Self {
+    pub fn new(x_surf: [F; N], x: Xspace1D, t: Tspace) -> Self {
         let ioniz_prob: [Vec<F>; N] = std::array::from_fn(|_| Vec::new());
         Self {
             x_surf,
             ioniz_prob,
             x,
+            t,
+        }
+    }
+
+    pub fn save_as_hdf5(&self, path: &str) {
+        let x_surf_arr = Array1::from_vec(self.x_surf.to_vec());
+        hdf5_interface::write_to_hdf5(path, "x_surf", None, &x_surf_arr).unwrap();
+        hdf5_interface::write_to_hdf5(path, "t", None, &self.t.grid).unwrap();
+        for i in 0..N {
+            let ioniz_prob_i = Array1::from_vec(self.ioniz_prob[i].to_vec());
+            hdf5_interface::write_to_hdf5(
+                path,
+                format!("ioniz_prob_{i}").as_str(),
+                None,
+                &ioniz_prob_i,
+            )
+            .unwrap();
         }
     }
 
