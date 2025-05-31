@@ -1,7 +1,7 @@
 use super::{
-    fft_maker::FftMaker1D,
-    space::{Pspace1D, Xspace1D},
-    wave_function::WaveFunction1D,
+    fft_maker::FftMaker2D,
+    space::{Pspace2D, Xspace2D},
+    wave_function::WaveFunction2D,
 };
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, I, PI};
@@ -22,15 +22,15 @@ use std::fs::File;
 use std::io::BufWriter;
 
 #[derive(Debug, Clone)]
-pub struct IonizProb1D<const N: usize> {
+pub struct IonizProb2D<const N: usize> {
     pub x_surf: [F; N],
     pub ioniz_prob: [Vec<F>; N],
-    pub x: Xspace1D,
+    pub x: Xspace2D,
     pub t: Array1<F>,
 }
 
-impl<const N: usize> IonizProb1D<N> {
-    pub fn new(x_surf: [F; N], x: Xspace1D, t: Array1<F>) -> Self {
+impl<const N: usize> IonizProb2D<N> {
+    pub fn new(x_surf: [F; N], x: Xspace2D, t: Array1<F>) -> Self {
         let ioniz_prob: [Vec<F>; N] = std::array::from_fn(|_| Vec::new());
         Self {
             x_surf,
@@ -56,19 +56,22 @@ impl<const N: usize> IonizProb1D<N> {
         }
     }
 
-    pub fn add(&mut self, wf: &WaveFunction1D) {
+    pub fn add(&mut self, wf: &Array2<C>) {
         for i in 0..N {
-            let xmin = self.x.grid[0][[0]];
-            let ds = self.x.dx[0];
-            let indx0 = ((self.x_surf[i] - xmin) / ds).round() as usize;
-            let psi_slice = wf.psi.slice(s![indx0..]);
-            self.ioniz_prob[i].push(psi_slice.mapv(|c| c.norm_sqr()).sum() * self.x.dx[0]);
+            let xmin0 = self.x.grid[0][[0]];
+            let indx0 = ((self.x_surf[i] - xmin0) / self.x.dx[0]).round() as usize;
+
+            let xmin1 = self.x.grid[1][[0]];
+            let indx1 = ((self.x_surf[i] - xmin1) / self.x.dx[1]).round() as usize;
+            let psi_slice = wf.slice(s![indx0.., indx1..]);
+            self.ioniz_prob[i]
+                .push(psi_slice.mapv(|c| c.norm_sqr()).sum() * self.x.dx[0] * self.x.dx[1]);
         }
     }
 
-    pub fn plot(&self, tspace: &Tspace, output_path: &str) {
+    pub fn plot(&self, t: &Array1<F>, output_path: &str) {
         // Создаём область для рисования
-        let t = tspace.grid.clone();
+        // let t = tspace.grid.clone();
 
         let root = BitMapBackend::new(output_path, (1024, 768)).into_drawing_area();
         root.fill(&WHITE).unwrap();

@@ -15,6 +15,12 @@ pub fn soft_coulomb_e0_6_7534_eV(x: [F; 1]) -> F {
     -1.0 / (x[0] * x[0] + a * a).sqrt()
 }
 
+/// Soft Coulomb 1d E0 = 9.03 eV, dE = 0.028 eV
+pub fn soft_coulomb_e0_9_03_eV(x: [F; 1]) -> F {
+    let a: F = 2.27;
+    -1.0 / (x[0] * x[0] + a * a).sqrt()
+}
+
 /// Потенциал отрицательного иона брома. Внутренний электрон. Одномерный.
 pub fn br_1e1d_inner(x: [F; 1]) -> F {
     // параметры:

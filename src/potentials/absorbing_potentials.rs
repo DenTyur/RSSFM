@@ -12,7 +12,7 @@ pub fn absorbing_potential_1d(x: [F; 1], r0: F, alpha: F) -> C {
     }
 }
 
-/// асимметричный
+/// 1D асимметричный
 pub fn absorbing_potential_1d_asim(x: [F; 1], r0: [F; 2], alpha: F) -> C {
     let x_val = x[0];
     if x_val < r0[0] {
@@ -39,6 +39,47 @@ pub fn absorbing_potential_2d(x: [F; 2], r0: F, alpha: F) -> C {
     } else {
         C::new(0.0, 0.0)
     }
+}
+
+/// 2D асимметричный
+pub fn absorbing_potential_2d_asim(
+    point: [F; 2],       // Точка в 2D пространстве [x, y]
+    bounds: [[F; 2]; 2], // Границы области [[x_min, x_max], [y_min, y_max]]
+    alpha: F,            // Параметр поглощения
+) -> C {
+    let x = point[0];
+    let y = point[1];
+
+    let x_min = bounds[0][0];
+    let x_max = bounds[0][1];
+    let y_min = bounds[1][0];
+    let y_max = bounds[1][1];
+
+    let mut potential = C::new(0.0, 0.0);
+
+    // Левая граница по x (x < x_min)
+    if x < x_min {
+        let dist = x_min - x;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+    // Правая граница по x (x > x_max)
+    else if x > x_max {
+        let dist = x - x_max;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+
+    // Нижняя граница по y (y < y_min)
+    if y < y_min {
+        let dist = y_min - y;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+    // Верхняя граница по y (y > y_max)
+    else if y > y_max {
+        let dist = y - y_max;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+
+    potential
 }
 
 /// 4D

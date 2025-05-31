@@ -35,6 +35,23 @@ path = "src/out/br_linear_polarization/dim1/inner/br_1e1d_inner.rs"
 name = "br_2e1d_sym_nonint_wf"
 path = "src/out/br_linear_polarization/dim1/sym_nonint_wf2e1d/br_2e1d_sym_nonint_wf.rs"
 
+# br linear polarization MODEL 6.75 3.37
+[[bin]]
+name = "model_br_6_75_3_37_external"
+path = "src/out/model_br_2_lin_polariz/external/model_br_6_75_3_37_external.rs"
+
+[[bin]]
+name = "model_br_6_75_3_37_inner"
+path = "src/out/model_br_2_lin_polariz/inner/model_br_6_75_3_37_inner.rs"
+
+[[bin]]
+name = "model_br_6_75_3_37_sym_nonint_wf"
+path = "src/out/model_br_2_lin_polariz/sym_nonint_wf2e1d/model_br_6_75_3_37_sym_nonint_wf.rs"
+
+[[bin]]
+name = "int_wf2e1d"
+path = "src/out/model_br_2_lin_polariz/int_wf2e1d/int_wf2e1d.rs"
+
 
 # тестировка 4d
 [[bin]]

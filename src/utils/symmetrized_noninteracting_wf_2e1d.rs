@@ -16,7 +16,7 @@ use std::io::BufWriter;
 pub struct SymNonintWF2e1d {
     psi1: Array1<C>,
     psi2: Array1<C>,
-    wf2e: Array2<C>,
+    pub wf2e: Array2<C>,
     x: Xspace1D, // сетки psi1 и psi2 обязаны быть одинаковыми
 }
 
