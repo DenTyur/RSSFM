@@ -46,11 +46,21 @@ impl<const N: usize> IonizProb2D<N> {
         hdf5_interface::write_to_hdf5(path, "t", None, &self.t).unwrap();
         for i in 0..N {
             let ioniz_prob_i = Array1::from_vec(self.ioniz_prob[i].to_vec());
+            let lenth = ioniz_prob_i.len();
+            let last = ioniz_prob_i[lenth - 1];
             hdf5_interface::write_to_hdf5(
                 path,
                 format!("ioniz_prob_{i}").as_str(),
                 None,
                 &ioniz_prob_i,
+            )
+            .unwrap();
+            hdf5_interface::create_str_data_attr(
+                path,
+                format!("ioniz_prob_{i}").as_str(),
+                None,
+                "last",
+                format!("{last}").as_str(),
             )
             .unwrap();
         }

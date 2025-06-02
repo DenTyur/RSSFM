@@ -82,6 +82,11 @@ pub fn soft_coulomb_2e1d_e0_10_1159_eV(x: [F; 2]) -> F {
         + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
 }
 
+pub fn soft_coulomb_2e1d_interact(x: [F; 2], a: F, b: F) -> F {
+    -1.0 / (x[0].powi(2) + a.powi(2)).sqrt() - 1.0 / (x[1].powi(2) + a.powi(2)).sqrt()
+        + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
+}
+
 /// Отрицательный ион брома. Два одномерных электрона с взаимодействием
 pub fn br_2e1d(x: [F; 2]) -> F {
     let a: F = 1.66;

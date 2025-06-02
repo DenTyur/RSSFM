@@ -358,7 +358,7 @@ fn gen_group_path(group: Option<&str>) -> String {
 }
 
 // Добавление аттрибута дадасету
-fn create_str_data_attr(
+pub fn create_str_data_attr(
     filename: &str,
     name: &str,
     group: Option<&str>,
@@ -381,7 +381,7 @@ fn create_str_data_attr(
 }
 
 // Добавление аттрибута группе
-fn add_str_group_attr(
+pub fn add_str_group_attr(
     filename: &str,
     group_path: &str,
     attr_name: &str,
