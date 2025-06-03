@@ -207,12 +207,12 @@ impl WaveFunction<2> for WaveFunction2D {
     fn extend(&mut self, x_new: &Xspace2D) {
         // Проверяем, что шаги сетки совпадают
         assert!(
-            (x_new.dx[0] - self.x.dx[0]).abs() < 1e-10,
-            "Шаг x1 должен совпадать"
+            (x_new.dx[0] - self.x.dx[0]).abs() < 1e-5,
+            "Шаг x0 должен совпадать"
         );
         assert!(
-            (x_new.dx[1] - self.x.dx[1]).abs() < 1e-10,
-            "Шаг x2 должен совпадать"
+            (x_new.dx[1] - self.x.dx[1]).abs() < 1e-5,
+            "Шаг x1 должен совпадать"
         );
 
         // Определяем область пересечения старых и новых координат

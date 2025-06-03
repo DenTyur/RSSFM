@@ -9,6 +9,13 @@ pub fn soft_coulomb(x: [F; 1], a: F) -> F {
     -1.0 / (x[0] * x[0] + a * a).sqrt()
 }
 
+// Сглаженный кулон 1D
+// z -- заряд остова с учетом знака (-1 для атома)
+// a -- параметр сглаживания
+pub fn soft_coulomb_1d(x: [F; 1], z: F, a: F) -> F {
+    z / (x[0] * x[0] + a * a).sqrt()
+}
+
 /// Soft Coulomb 1d E0 = 6.7534 eV, dE = 0.028 eV
 pub fn soft_coulomb_e0_6_7534_eV(x: [F; 1]) -> F {
     let a: F = 3.15;
@@ -82,8 +89,13 @@ pub fn soft_coulomb_2e1d_e0_10_1159_eV(x: [F; 2]) -> F {
         + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
 }
 
-pub fn soft_coulomb_2e1d_interact(x: [F; 2], a: F, b: F) -> F {
-    -1.0 / (x[0].powi(2) + a.powi(2)).sqrt() - 1.0 / (x[1].powi(2) + a.powi(2)).sqrt()
+// Сглаженный кулон 2e1d с взаимодействием
+// z -- заряд остова с учетом знака (-2 для атома)
+// a -- сглаживающий параметр взаимодействия электронов с остовом
+// b -- сглаживающий параметр e-e взаимодействия
+pub fn soft_coulomb_2e1d_interact(x: [F; 2], z: F, a: F, b: F) -> F {
+    z / (x[0].powi(2) + a.powi(2)).sqrt()
+        + z / (x[1].powi(2) + a.powi(2)).sqrt()
         + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
 }
 

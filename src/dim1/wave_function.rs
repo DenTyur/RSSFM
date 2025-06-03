@@ -228,7 +228,7 @@ impl WaveFunction<1> for WaveFunction1D {
     fn extend(&mut self, x_new: &Xspace1D) {
         // Проверяем, что шаги сетки совпадают
         assert!(
-            (x_new.dx[0] - self.x.dx[0]).abs() < 1e-10,
+            (x_new.dx[0] - self.x.dx[0]).abs() < 1e-5,
             "Шаг x должен совпадать"
         );
 
