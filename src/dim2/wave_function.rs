@@ -92,7 +92,7 @@ impl WaveFunction2D {
         let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
             .unwrap()
             .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x1", Some("Xspace"))
             .unwrap()
             .mapv_into(|x| x as F); // преобразуем в нужный тип данных
         let dx0 = x0[[1]] - x0[[0]];
