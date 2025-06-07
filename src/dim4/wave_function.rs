@@ -22,10 +22,10 @@ use std::io::BufWriter;
 /// раз, но это надо заморочиться).
 pub struct WaveFunction4D {
     pub psi: Array4<C>,
-    pub dpsi_d0: Array4<C>,
-    pub dpsi_d1: Array4<C>,
-    pub dpsi_d2: Array4<C>,
-    pub dpsi_d3: Array4<C>,
+    pub dpsi_d0: Option<Array4<C>>,
+    pub dpsi_d1: Option<Array4<C>>,
+    pub dpsi_d2: Option<Array4<C>>,
+    pub dpsi_d3: Option<Array4<C>>,
     pub x: Xspace4D,
     pub p: Pspace4D,
 }
@@ -38,13 +38,20 @@ impl WaveFunction4D {
         let p = Pspace4D::init(x);
         Self {
             psi,
-            dpsi_d0: dpsi_d0.clone(),
-            dpsi_d1: dpsi_d0.clone(),
-            dpsi_d2: dpsi_d0.clone(),
-            dpsi_d3: dpsi_d0,
+            dpsi_d0: None,
+            dpsi_d1: None,
+            dpsi_d2: None,
+            dpsi_d3: None,
             x: x.clone(),
             p,
         }
+    }
+
+    pub fn init_derivatives(&mut self) {
+        self.dpsi_d0 = Some(self.psi.clone());
+        self.dpsi_d0 = Some(self.psi.clone());
+        self.dpsi_d0 = Some(self.psi.clone());
+        self.dpsi_d0 = Some(self.psi.clone());
     }
 
     pub fn init_from_npy(psi_path: &str, x: Xspace4D) -> Self {
@@ -53,10 +60,10 @@ impl WaveFunction4D {
         let p = Pspace4D::init(&x);
         Self {
             psi: Array::<C, Ix4>::read_npy(reader).unwrap(),
-            dpsi_d0: dpsi_d0.clone(),
-            dpsi_d1: dpsi_d0.clone(),
-            dpsi_d2: dpsi_d0.clone(),
-            dpsi_d3: dpsi_d0,
+            dpsi_d0: None,
+            dpsi_d1: None,
+            dpsi_d2: None,
+            dpsi_d3: None,
             x,
             p,
         }
@@ -252,11 +259,19 @@ impl ValueAndSpaceDerivatives<4> for WaveFunction4D {
         let ix2 = ((x[2] - x2_min) / self.x.dx[2]).round() as usize;
         let ix3 = ((x[3] - x3_min) / self.x.dx[3]).round() as usize;
         // возвращаем производную
+        if self.dpsi_d0.is_none()
+            || self.dpsi_d1.is_none()
+            || self.dpsi_d2.is_none()
+            || self.dpsi_d3.is_none()
+        {
+            panic!("Derivatives are required but not available");
+        }
+
         [
-            self.dpsi_d0[(ix0, ix1, ix2, ix3)],
-            self.dpsi_d1[(ix0, ix1, ix2, ix3)],
-            self.dpsi_d2[(ix0, ix1, ix2, ix3)],
-            self.dpsi_d3[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d0.as_ref().unwrap()[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d1.as_ref().unwrap()[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d2.as_ref().unwrap()[(ix0, ix1, ix2, ix3)],
+            self.dpsi_d3.as_ref().unwrap()[(ix0, ix1, ix2, ix3)],
         ]
     }
 
@@ -280,17 +295,29 @@ impl WaveFunction<4> for WaveFunction4D {
 
     /// Расширяет сетку волновой функции нулями
     fn extend(&mut self, x_new: &Xspace4D) {
+        // Проверяем, что шаги сетки совпадают
         for i in 0..4 {
-            // Проверяем, что шаги сетки совпадают
             assert!(
-                (x_new.dx[i] - self.x.dx[i]).abs() < 1e-10,
-                "Шаг x и x_new должен совпадать"
+                (x_new.dx[i] - self.x.dx[i]).abs() < 1e-5,
+                "Шаги сеток должены совпадать"
             );
-            // Проверяем, что новые оси содержат старые
+        }
+
+        // Определяем область пересечения старых и новых координат
+        let mut x_start: [F; 4] = [0.0; 4];
+        let mut x_end: [F; 4] = [0.0; 4];
+        for i in 0..4 {
+            x_start[i] = self.x.grid[i][0].max(x_new.grid[i][0]);
+            x_end[i] = self.x.grid[i][self.x.n[i] - 1].min(x_new.grid[i][x_new.n[i] - 1]);
+        }
+        dbg!(x_start);
+        dbg!(x_end);
+
+        // Проверяем, что есть пересечение
+        for i in 0..4 {
             assert!(
-                x_new.grid[i][0] <= self.x.grid[i][0]
-                    && x_new.grid[i][x_new.n[i] - 1] >= self.x.grid[i][self.x.n[i] - 1],
-                "x_new должна содержать x"
+                x_start[i] <= x_end[i],
+                "Нет пересечения между старой и новой сеткой"
             );
         }
 
@@ -298,27 +325,41 @@ impl WaveFunction<4> for WaveFunction4D {
         let mut psi_new: Array4<C> =
             Array4::zeros((x_new.n[0], x_new.n[1], x_new.n[2], x_new.n[3]));
 
-        // Находим индексы, куда нужно вставить старый массив
-        let x0_start = ((self.x.grid[0][0] - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
-        let x0_end = x0_start + self.x.n[0];
+        // Находим индексы в новой сетке, куда нужно вставить данные
+        let mut x_new_start_idx: [usize; 4] = [0; 4];
+        let mut x_new_end_idx: [usize; 4] = [0; 4];
+        for i in 0..4 {
+            x_new_start_idx[i] = ((x_start[i] - x_new.grid[i][0]) / x_new.dx[i]).round() as usize;
+            x_new_end_idx[i] = ((x_end[i] - x_new.grid[i][0]) / x_new.dx[i]).round() as usize + 1;
+        }
+        dbg!(x_new_start_idx);
+        dbg!(x_new_end_idx);
 
-        let x1_start = ((self.x.grid[1][0] - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
-        let x1_end = x1_start + self.x.n[1];
-
-        let x2_start = ((self.x.grid[2][0] - x_new.grid[2][0]) / x_new.dx[2]).round() as usize;
-        let x2_end = x2_start + self.x.n[2];
-
-        let x3_start = ((self.x.grid[3][0] - x_new.grid[3][0]) / x_new.dx[3]).round() as usize;
-        let x3_end = x3_start + self.x.n[3];
+        // Находим индексы в старой сетке, откуда брать данные
+        let mut x_old_start_idx: [usize; 4] = [0; 4];
+        let mut x_old_end_idx: [usize; 4] = [0; 4];
+        for i in 0..4 {
+            x_old_start_idx[i] = ((x_start[i] - self.x.grid[i][0]) / self.x.dx[i]).round() as usize;
+            x_old_end_idx[i] = ((x_end[i] - self.x.grid[i][0]) / self.x.dx[i]).round() as usize + 1;
+        }
+        dbg!(x_old_start_idx);
+        dbg!(x_old_end_idx);
 
         // Вставляем старые данные в новый массив
-        let mut psi_slice = psi_new.slice_mut(s![
-            x0_start..x0_end,
-            x1_start..x1_end,
-            x2_start..x2_end,
-            x3_start..x3_end
+        // Копируем данные из старого массива в новый
+        let mut new_slice = psi_new.slice_mut(s![
+            x_new_start_idx[0]..x_new_end_idx[0],
+            x_new_start_idx[1]..x_new_end_idx[1],
+            x_new_start_idx[2]..x_new_end_idx[2],
+            x_new_start_idx[3]..x_new_end_idx[3],
         ]);
-        psi_slice.assign(&self.psi);
+        let old_slice = self.psi.slice(s![
+            x_old_start_idx[0]..x_old_end_idx[0],
+            x_old_start_idx[1]..x_old_end_idx[1],
+            x_old_start_idx[2]..x_old_end_idx[2],
+            x_old_start_idx[3]..x_old_end_idx[3],
+        ]);
+        new_slice.assign(&old_slice);
 
         // Обновляем все поля
         self.psi = psi_new;
@@ -326,16 +367,71 @@ impl WaveFunction<4> for WaveFunction4D {
         self.p = Pspace4D::init(x_new);
     }
 
+    // fn extend(&mut self, x_new: &Xspace4D) {
+    //     for i in 0..4 {
+    //         // Проверяем, что шаги сетки совпадают
+    //         assert!(
+    //             (x_new.dx[i] - self.x.dx[i]).abs() < 1e-10,
+    //             "Шаг x и x_new должен совпадать"
+    //         );
+    //         // Проверяем, что новые оси содержат старые
+    //         assert!(
+    //             x_new.grid[i][0] <= self.x.grid[i][0]
+    //                 && x_new.grid[i][x_new.n[i] - 1] >= self.x.grid[i][self.x.n[i] - 1],
+    //             "x_new должна содержать x"
+    //         );
+    //     }
+    //
+    //     // Создаем новый массив, заполненный нулями
+    //     let mut psi_new: Array4<C> =
+    //         Array4::zeros((x_new.n[0], x_new.n[1], x_new.n[2], x_new.n[3]));
+    //
+    //     // Находим индексы, куда нужно вставить старый массив
+    //     let x0_start = ((self.x.grid[0][0] - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
+    //     let x0_end = x0_start + self.x.n[0];
+    //
+    //     let x1_start = ((self.x.grid[1][0] - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
+    //     let x1_end = x1_start + self.x.n[1];
+    //
+    //     let x2_start = ((self.x.grid[2][0] - x_new.grid[2][0]) / x_new.dx[2]).round() as usize;
+    //     let x2_end = x2_start + self.x.n[2];
+    //
+    //     let x3_start = ((self.x.grid[3][0] - x_new.grid[3][0]) / x_new.dx[3]).round() as usize;
+    //     let x3_end = x3_start + self.x.n[3];
+    //
+    //     // Вставляем старые данные в новый массив
+    //     let mut psi_slice = psi_new.slice_mut(s![
+    //         x0_start..x0_end,
+    //         x1_start..x1_end,
+    //         x2_start..x2_end,
+    //         x3_start..x3_end
+    //     ]);
+    //     psi_slice.assign(&self.psi);
+    //
+    //     // Обновляем все поля
+    //     self.psi = psi_new;
+    //     self.x = x_new.clone();
+    //     self.p = Pspace4D::init(x_new);
+    // }
+
     fn update_derivatives(&mut self) {
         // unimplemented!("This method is not implemented yet");
-        self.dpsi_d0 = self.psi.clone();
-        self.dpsi_d1 = self.psi.clone();
-        self.dpsi_d2 = self.psi.clone();
-        self.dpsi_d3 = self.psi.clone();
-        fft_dpsi_d0(&mut self.dpsi_d0, &self.x, &self.p);
-        fft_dpsi_d1(&mut self.dpsi_d1, &self.x, &self.p);
-        fft_dpsi_d2(&mut self.dpsi_d2, &self.x, &self.p);
-        fft_dpsi_d3(&mut self.dpsi_d3, &self.x, &self.p);
+        if self.dpsi_d0.is_none()
+            || self.dpsi_d1.is_none()
+            || self.dpsi_d2.is_none()
+            || self.dpsi_d3.is_none()
+        {
+            panic!("Derivatives are required but not available");
+        }
+
+        self.dpsi_d0 = Some(self.psi.clone());
+        self.dpsi_d1 = Some(self.psi.clone());
+        self.dpsi_d2 = Some(self.psi.clone());
+        self.dpsi_d3 = Some(self.psi.clone());
+        fft_dpsi_d0(self.dpsi_d0.as_mut().unwrap(), &self.x, &self.p);
+        fft_dpsi_d1(self.dpsi_d1.as_mut().unwrap(), &self.x, &self.p);
+        fft_dpsi_d2(self.dpsi_d2.as_mut().unwrap(), &self.x, &self.p);
+        fft_dpsi_d3(self.dpsi_d3.as_mut().unwrap(), &self.x, &self.p);
     }
 
     fn prob_in_numerical_box(&self) -> F {

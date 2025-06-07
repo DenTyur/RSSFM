@@ -1,13 +1,11 @@
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::fft_maker::FftMaker1D;
-use crate::dim2::{
-    fft_maker::FftMaker2D, field::Field2D, gauge::LenthGauge2D, space::Xspace2D, ssfm::SSFM2D,
-    wave_function::WaveFunction2D,
+use crate::dim4::{
+    fft_maker::FftMaker4D, field::Field4D, gauge::LenthGauge4D, space::Xspace4D, ssfm::SSFM4D,
+    wave_function::WaveFunction4D,
 };
 use crate::measure_time;
-use crate::potentials::absorbing_potentials::absorbing_potential_1d;
-use crate::potentials::potentials;
 use crate::traits::fft_maker::{self, FftMaker};
 use crate::traits::{
     flow::{Flux, SurfaceFlow},
@@ -25,8 +23,8 @@ use std::time::Instant;
 // плохо написано, но работает:)
 pub struct TimeFFT {
     t: Tspace,
-    point: [F; 2],
-    ind_point: [usize; 2],
+    point: [F; 4],
+    ind_point: [usize; 4],
     psi_in_point: Vec<C>,
     pub energy: Array1<F>,
     psi_fft: Array1<C>,
@@ -34,11 +32,15 @@ pub struct TimeFFT {
 
 impl TimeFFT {
     const AU_TO_EV: F = 4.3597e-11 / 1.60217733e-12;
-    pub fn new(t: Tspace, point: [F; 2], x: &Xspace2D) -> Self {
-        let x_min = x.grid[0][[0]];
-        let y_min = x.grid[1][[0]];
-        let ind_point_x = ((point[0] - x_min) / x.dx[0]).round() as usize;
-        let ind_point_y = ((point[1] - y_min) / x.dx[1]).round() as usize;
+    pub fn new(t: Tspace, point: [F; 4], x: &Xspace4D) -> Self {
+        let x0_min = x.grid[0][[0]];
+        let x1_min = x.grid[1][[0]];
+        let x2_min = x.grid[2][[0]];
+        let x3_min = x.grid[3][[0]];
+        let ind_point_x0 = ((point[0] - x0_min) / x.dx[0]).round() as usize;
+        let ind_point_x1 = ((point[1] - x1_min) / x.dx[1]).round() as usize;
+        let ind_point_x2 = ((point[2] - x2_min) / x.dx[2]).round() as usize;
+        let ind_point_x3 = ((point[3] - x3_min) / x.dx[3]).round() as usize;
         let psi_in_point: Vec<C> = Vec::new();
         let energy_step = 2.0 * PI / (t.nt as F * t.t_step()) * Self::AU_TO_EV;
         // ????????????????????????????????????????
@@ -52,15 +54,21 @@ impl TimeFFT {
         Self {
             t,
             point,
-            ind_point: [ind_point_x, ind_point_y],
+            ind_point: [ind_point_x0, ind_point_x1, ind_point_x2, ind_point_x3],
             psi_in_point,
             energy,
             psi_fft,
         }
     }
-    pub fn add_psi_in_point(&mut self, wf: &WaveFunction2D) {
-        self.psi_in_point
-            .push(wf.psi[(self.ind_point[0], self.ind_point[1])]);
+    pub fn add_psi_in_point(&mut self, wf: &WaveFunction4D) {
+        self.psi_in_point.push(
+            wf.psi[(
+                self.ind_point[0],
+                self.ind_point[1],
+                self.ind_point[2],
+                self.ind_point[3],
+            )],
+        );
     }
 
     pub fn shift(&mut self) {
