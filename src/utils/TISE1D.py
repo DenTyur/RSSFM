@@ -20,8 +20,8 @@ device = th.device("cpu")
 prs = types.SimpleNamespace()
 
 prs.Nn = None
-prs.N = 128
-prs.dx = 0.5
+prs.N = 1200
+prs.dx = 0.05  # Z=-18 !!!!!!!!!!!!
 prs.state_number = 0
 # br:
 # a_V = 1.66
@@ -32,8 +32,8 @@ prs.state_number = 0
 # c2 = 2
 # const = 1
 
-prs.a_V = 3.15
-prs.name_of_psi_array = "model_6ev_coulomb.hdf5"
+prs.a_V = 0.2965
+prs.name_of_psi_array = "model_Ne.hdf5"
 
 
 # ========================================================================================
@@ -48,7 +48,7 @@ x = prs.dx * (np.arange(prs.N) - 0.5 * prs.N)
 
 
 def get_potential(x):
-    V = -1.0 / np.sqrt(x**2 + prs.a_V**2)
+    V = -18.0 / np.sqrt(x**2 + prs.a_V**2)
     return V
 
 
@@ -87,15 +87,21 @@ au_to_ev = 27.2113961317875
 print("E0 = ", eigenvalues, "au")
 
 # сохранение в.ф. и параметров в файл
-with h5py.File(f"{prs.name_of_psi_array}", "w") as f5:
-    f5.create_dataset("prs", data=json.dumps(prs.__dict__))
-    f5.create_dataset("x", data=x)
-    f5.create_dataset("E_ev", data=eigenvalues * au_to_ev)
-    for i in range(prs.state_number + 1):
-        psi_bound = get_psi_bound(i)
-        f5.create_dataset(f"psi_{i}", data=psi_bound)
-np.save("psi_initial.npy", psi_bound[0])
-np.save("x0.npy", x)
+# with h5py.File(f"{prs.name_of_psi_array}", "w") as f5:
+#     f5.create_dataset("prs", data=json.dumps(prs.__dict__))
+#     f5.create_dataset("x", data=x)
+#     f5.create_dataset("E_ev", data=eigenvalues * au_to_ev)
+#     for i in range(prs.state_number + 1):
+#         psi_bound = get_psi_bound(i)
+#         f5.create_dataset(f"psi_{i}", data=psi_bound)
+
+psi_bound = get_psi_bound(0)
+np.save("psi_initial.npy", psi_bound)
+psi = np.load("psi_initial.npy")
+np.save("psi_initial.npy", psi.astype(np.complex64))
+np.save("x0.npy", x.astype(np.float32))
+# plt.plot(x, np.abs(get_psi_bound(0)))
+# plt.show()
 
 print(f"E{prs.state_number} = ", eigenvalues * au_to_ev, "eV")
 f.write("a_V = " + str(prs.a_V) + "\n")

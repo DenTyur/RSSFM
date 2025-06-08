@@ -6,9 +6,7 @@ import numpy as np
 # =========================================================================
 
 psi_initial_path = "psi_initial.npy"
-final_path = (
-    # "/home/denis/Programs/atoms_and_ions/DATA/br/br1e1d_N120_dx05_external.hdf5"
-)
+final_path = "/home/denis/Programs/atoms_and_ions/DATA/Ne10/Ne1e1d_1195eV_z9_N200_dx005_1s_external.hdf5"
 dim = 1
 
 # =========================================================================
@@ -37,18 +35,19 @@ with h5py.File(final_path, "w") as f:
     gwf.create_dataset("psi_re", data=psi_initial.real)
 
     gap = f.create_group("AtomicPotential")
-    gap.attrs["type"] = "короткодействующий потенциал"
-    # gap.attrs["smoothing_coefficients"] = "a->e_core"
-    gap.attrs["c1"] = 0.48
-    gap.attrs["c2"] = 0.76
-    gap.attrs["analitic_expression"] = "-c1*exp[-x^2/c2^2]"
+    gap.attrs["type"] = "сглаженный кулон"
+    gap.attrs["smoothing_coefficients"] = "a->e_core"
+    # gap.attrs["c1"] = 0.69
+    # gap.attrs["c2"] = 0.76
+    gap.attrs["a"] = 0.1428
+    gap.attrs["analitic_expression"] = "-9/sqrt(x^2+a^2)"
     # gap.create_dataset("atomic_potential", data=V_potential)
 
     gTimeFFT = f.create_group("TimeFFT")
-    gTimeFFT.attrs["Delta_Energy [eV]"] = 0.08548546
-    gTimeFFT.attrs["Energy [eV]"] = -3.3339615
-    gTimeFFT.attrs["dt_in_TimeFFT"] = 0.2
-    gTimeFFT.attrs["n_step_in_TimeFFT"] = 20
+    gTimeFFT.attrs["Delta_Energy [eV]"] = 0.42749023
+    gTimeFFT.attrs["Energy [eV]"] = -1195.524
+    gTimeFFT.attrs["dt_in_TimeFFT"] = 0.001
+    gTimeFFT.attrs["n_step_in_TimeFFT"] = 40
     # del gTimeFFT.attrs["nt_in_TimeFFT"]
-    gTimeFFT.attrs["nt_in_TimeFFT"] = 500
-    gTimeFFT.create_dataset("Energy", data=-3.3339615)
+    gTimeFFT.attrs["nt_in_TimeFFT"] = 10000
+    gTimeFFT.create_dataset("Energy", data=-1195.524)
