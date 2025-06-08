@@ -3,6 +3,7 @@ pub mod field;
 pub mod flow;
 pub mod gauge;
 pub mod ioniz_prob;
+pub mod single_ioniz_prob;
 pub mod space;
 pub mod ssfm;
 pub mod time_fft;

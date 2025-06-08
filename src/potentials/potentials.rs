@@ -69,9 +69,11 @@ pub fn short_c2_076(x: [F; 1], c1: F) -> F {
 pub fn oscillator_2d(x: [F; 2]) -> F {
     0.5 * (x[0] * x[0] + x[1] * x[1])
 }
-/// Сглаженный кулон
-pub fn soft_coulomb_2d(x: [F; 2], a: F) -> F {
-    -1.0 / (x[0] * x[0] + x[1] * x[1] + a * a).sqrt()
+/// Сглаженный кулон двумерный
+/// z -- заряд остова с учетом знака (-1 для атома)
+/// a -- сглаживающий параметр
+pub fn soft_coulomb_2d(x: [F; 2], z: F, a: F) -> F {
+    z / (x[0] * x[0] + x[1] * x[1] + a * a).sqrt()
 }
 
 /// soft_coulomb_2e1d
@@ -139,6 +141,19 @@ pub fn br_1e2d_inner(x: [F; 2]) -> F {
 }
 
 //============================ 4D ========================================
+
+/// Сглаженный кулон с взаимодействием
+pub fn soft_coulomb_2e2d_interact(x: [F; 4], z: F, a: F, b: F) -> F {
+    // реализация:
+    let r1_squared: F = x[0].powi(2) + x[1].powi(2);
+    let r2_squared: F = x[2].powi(2) + x[3].powi(2);
+    let delta_rx: F = x[2] - x[0];
+    let delta_ry: F = x[3] - x[1];
+
+    z / (r1_squared + a * a).sqrt()
+        + z / (r2_squared + a * a).sqrt()
+        + 1.0 / (delta_rx * delta_rx + delta_ry * delta_ry + b * b).sqrt()
+}
 
 /// ## 4D
 pub fn br_2e2d(x: [F; 4]) -> F {

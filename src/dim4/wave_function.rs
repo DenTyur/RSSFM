@@ -355,8 +355,6 @@ impl WaveFunction<4> for WaveFunction4D {
             x_start[i] = self.x.grid[i][0].max(x_new.grid[i][0]);
             x_end[i] = self.x.grid[i][self.x.n[i] - 1].min(x_new.grid[i][x_new.n[i] - 1]);
         }
-        dbg!(x_start);
-        dbg!(x_end);
 
         // Проверяем, что есть пересечение
         for i in 0..4 {
@@ -377,8 +375,6 @@ impl WaveFunction<4> for WaveFunction4D {
             x_new_start_idx[i] = ((x_start[i] - x_new.grid[i][0]) / x_new.dx[i]).round() as usize;
             x_new_end_idx[i] = ((x_end[i] - x_new.grid[i][0]) / x_new.dx[i]).round() as usize + 1;
         }
-        dbg!(x_new_start_idx);
-        dbg!(x_new_end_idx);
 
         // Находим индексы в старой сетке, откуда брать данные
         let mut x_old_start_idx: [usize; 4] = [0; 4];
@@ -387,8 +383,6 @@ impl WaveFunction<4> for WaveFunction4D {
             x_old_start_idx[i] = ((x_start[i] - self.x.grid[i][0]) / self.x.dx[i]).round() as usize;
             x_old_end_idx[i] = ((x_end[i] - self.x.grid[i][0]) / self.x.dx[i]).round() as usize + 1;
         }
-        dbg!(x_old_start_idx);
-        dbg!(x_old_end_idx);
 
         // Вставляем старые данные в новый массив
         // Копируем данные из старого массива в новый

@@ -63,10 +63,15 @@ path = "src/out/dim4/main4d.rs"
 name = "main1d"
 path = "src/out/dim1/main1d.rs"
 
-# тестировка 2d
+# начальное состояние 2d
 [[bin]]
-name = "main2d"
-path = "src/out/dim2/main2d.rs"
+name = "init_state2d"
+path = "src/out/dim2/init_state/init_state2d.rs"
+
+# 1e2d ионизация 2d
+[[bin]]
+name = "ioniz_1e2d"
+path = "src/out/dim2/ioniz_1e2d/ioniz_1e2d.rs"
 
 # осциллятор 2d
 [[bin]]
