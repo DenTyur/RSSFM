@@ -25,6 +25,17 @@ class IR(object):
 
     def set_Et(self, E):
         self.E = E
+        
+        # ========== 1D основное состояние ===========================
+    def get_w_1d_from_lower_state(self, E0):
+        # return (2*self.I)**(3/2)/E0* np.exp(-2/3 * (2*self.I)**(3/2)/E0)
+        # n = 1/np.sqrt(2*self.I)
+        # F = E0 # / (2*self.I)**(3/2)
+        # return 1/(2*np.pi*n**3) * (4/(n**4 * F))**(2*n) * np.exp(-2/(3*n**3 * F) + 2*n)
+        sigma = 99
+        Ip = 162
+        kappa = np.sqrt(2*Ip)
+        return np.sqrt(sigma/np.pi)*kappa*np.exp(-2/3 * kappa**3 / E0)
 
         # ========== PPT ===========================
 
