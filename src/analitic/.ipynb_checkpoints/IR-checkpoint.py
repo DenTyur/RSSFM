@@ -19,6 +19,13 @@ class IR(object):
 
         self.E0 = None
         self.E = None
+        self.C_fit_1d_coulomb = None
+
+    def set_C_fit_1d_coulomb(self, C):
+        self.C_fit_1d_coulomb = C
+        
+    def set_C_fit_1d_short(self, C):
+        self.C_fit_1d_short = C
 
     def set_E0(self, E0):
         self.E0 = E0
@@ -26,16 +33,28 @@ class IR(object):
     def set_Et(self, E):
         self.E = E
         
-        # ========== 1D основное состояние ===========================
-    def get_w_1d_from_lower_state(self, E0):
-        # return (2*self.I)**(3/2)/E0* np.exp(-2/3 * (2*self.I)**(3/2)/E0)
-        # n = 1/np.sqrt(2*self.I)
-        # F = E0 # / (2*self.I)**(3/2)
-        # return 1/(2*np.pi*n**3) * (4/(n**4 * F))**(2*n) * np.exp(-2/(3*n**3 * F) + 2*n)
-        sigma = 99
-        Ip = 162
-        kappa = np.sqrt(2*Ip)
-        return np.sqrt(sigma/np.pi)*kappa*np.exp(-2/3 * kappa**3 / E0)
+        # ========== Скорость ионизации из 1D кулона ===========================
+    def get_w_1d_coulomb(self, E0):
+        if self.C_fit_1d_coulomb != None:
+            kappa = np.sqrt(2*self.I)
+            w0 = self.C_fit_1d_coulomb**2 * kappa * (
+                2 * kappa**2 / E0
+            )**(2*np.abs(self.Z)/kappa) * np.exp(-2/3 * kappa**3/E0)
+            # поправка на сдвиг точки x1
+            w_corr = np.exp(4/3 * np.sqrt(E0)*(np.abs(self.Z))**(3/2)/kappa**3)
+            return w0*w_corr
+        else: 
+            print("Panic: C_fit_1d_coulomb не определен!")
+            return None
+            
+        # ========== Скорость ионизации из 1D короткодействующего (short) ===========================
+    def get_w_1d_short(self, E0):
+        if self.C_fit_1d_short != None:
+            kappa = np.sqrt(2*self.I)
+            return self.C_fit_1d_short**2 * kappa * np.exp(-2/3 * kappa**3/E0)
+        else: 
+            print("Panic: C_fit_1d_short не определен!")
+            return None
 
         # ========== PPT ===========================
 
