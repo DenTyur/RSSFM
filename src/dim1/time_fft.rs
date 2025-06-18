@@ -22,13 +22,14 @@ use rayon::prelude::*;
 use std::time::Instant;
 
 // плохо написано, но работает:)
+#[derive(Default)]
 pub struct TimeFFT {
     t: Tspace,
     point: [F; 1],
     ind_point: [usize; 1],
     psi_in_point: Vec<C>,
     pub energy: Array1<F>,
-    psi_fft: Array1<C>,
+    pub psi_fft: Array1<C>,
 }
 
 impl TimeFFT {

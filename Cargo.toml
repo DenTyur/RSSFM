@@ -78,6 +78,16 @@ path = "src/out/dim2/ioniz_1e2d/ioniz_1e2d.rs"
 name = "oscillator2d"
 path = "src/out/dim2/oscillator/oscillator2d.rs"
 
+# 1d inner
+[[bin]]
+name = "inner1d"
+path = "src/out/dim1/ionization/inner/inner.rs"
+
+# 1d external
+[[bin]]
+name = "external1d"
+path = "src/out/dim1/ionization/external/external.rs"
+
 # тестировка
 [[bin]]
 name = "main"

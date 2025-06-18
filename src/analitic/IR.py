@@ -41,8 +41,8 @@ class IR(object):
                 2 * kappa**2 / E0
             )**(2*np.abs(self.Z)/kappa) * np.exp(-2/3 * kappa**3/E0)
             # поправка на сдвиг точки x1
-            w_corr = np.exp(4/3 * np.sqrt(E0)*(np.abs(self.Z))**(3/2)/kappa**3)
-            return w0*w_corr
+            # w_corr = np.exp(4/3 * np.sqrt(E0)*(np.abs(self.Z))**(3/2)/kappa**3)
+            return w0 #*w_corr
         else: 
             print("Panic: C_fit_1d_coulomb не определен!")
             return None

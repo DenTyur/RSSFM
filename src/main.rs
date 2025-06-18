@@ -18,7 +18,9 @@ use crate::dim2::{
     tsurff::Tsurff2D,
     wave_function::WaveFunction2D,
 };
-use crate::potentials::{absorbing_potentials::absorbing_potential, potentials::br_1e2d_external};
+use crate::potentials::{
+    absorbing_potentials::absorbing_potential_2d, potentials::br_1e2d_external,
+};
 use crate::traits::{space::Space, ssfm::SSFM, tsurff::Tsurff, wave_function::WaveFunction};
 use itertools::multizip;
 use ndarray::prelude::*;
@@ -63,7 +65,7 @@ fn main() {
     let gauge = VelocityGauge2D::new(&field);
 
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let abs_pot = |x: [F; 2]| absorbing_potential(x, 50.0, 0.02);
+    let abs_pot = |x: [F; 2]| absorbing_potential_2d(x, 50.0, 0.02);
     let mut ssfm = SSFM2D::new(&gauge, &x, br_1e2d_external, abs_pot);
 
     // создаем структуру для потока вероятности через поверхность

@@ -6,7 +6,7 @@ use std::fs::File;
 use std::io::BufWriter;
 
 /// Структура для временной сетки
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Tspace {
     pub t0: F,
     pub dt: F,
