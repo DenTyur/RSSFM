@@ -79,7 +79,7 @@ fn main() {
     let total_time = Instant::now();
     for i in 0..t.nt {
         let time_step = Instant::now();
-        println!(
+        print_and_log!(
             "STEP {}/{}, t.current={:.5}, norm = {}, prob_in_box = {}",
             i,
             t.nt,
@@ -128,7 +128,7 @@ fn main() {
             flow.add_instance_flow(&psi, t.current);
         });
         //============================================================
-        println!(
+        print_and_log!(
             "time_step = {:.3}, total_time = {:.3}",
             time_step.elapsed().as_secs_f32(),
             total_time.elapsed().as_secs_f32()
@@ -137,8 +137,8 @@ fn main() {
 
     flow.plot_flow(format!("{out_prefix}/imgs/flow.png").as_str());
     let total_flow = flow.compute_total_flow(t.t_step());
-    println!("total_flow = {}", total_flow);
-    println!(
+    print_and_log!("total_flow = {}", total_flow);
+    print_and_log!(
         "total_flow + prob_in_box = {}",
         total_flow.re + psi.prob_in_numerical_box()
     );
