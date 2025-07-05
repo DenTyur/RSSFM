@@ -1,7 +1,7 @@
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::{
-    fft_maker::FftMaker1D, field::Field1D, gauge::LenthGauge1D, space::Xspace1D, ssfm::SSFM1D,
+    fft_maker::FftMaker1D, gauge::LenthGauge1D, space::Xspace1D, ssfm::SSFM1D,
     wave_function::WaveFunction1D,
 };
 use crate::measure_time;

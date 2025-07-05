@@ -1,7 +1,6 @@
-use super::field::Field1D;
 use super::wave_function::WaveFunction1D;
 use crate::config::{C, F, I};
-use crate::traits::ssfm::GaugedEvolutionSSFM;
+use crate::traits::{field::Field, ssfm::GaugedEvolutionSSFM};
 use itertools::multizip;
 use rayon::prelude::*;
 
@@ -10,11 +9,11 @@ use rayon::prelude::*;
 //================================================================================
 /// Калибровка скорости без A^2
 #[derive(Clone, Copy)]
-pub struct VelocityGauge1D<'a> {
+pub struct VelocityGauge1D<'a, Field1D: Field<1>> {
     pub field: &'a Field1D,
 }
 
-impl<'a> VelocityGauge1D<'a> {
+impl<'a, Field1D: Field<1>> VelocityGauge1D<'a, Field1D> {
     pub const DIM: usize = 1;
 
     pub fn new(field: &'a Field1D) -> Self {
@@ -24,7 +23,7 @@ impl<'a> VelocityGauge1D<'a> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке скорости
-impl<'a> GaugedEvolutionSSFM<1> for VelocityGauge1D<'a> {
+impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<1> for VelocityGauge1D<'a, Field1D> {
     type WF = WaveFunction1D;
 
     fn x_evol_half(
@@ -62,7 +61,7 @@ impl<'a> GaugedEvolutionSSFM<1> for VelocityGauge1D<'a> {
     }
 
     fn p_evol(&self, wf: &mut WaveFunction1D, tcurrent: F, dt: F) {
-        let vec_pot = self.field.vec_pot(tcurrent);
+        let vec_pot = self.field.vector_potential(tcurrent);
 
         multizip((wf.psi.iter_mut(), wf.p.grid[0].iter()))
             .par_bridge()
@@ -76,11 +75,11 @@ impl<'a> GaugedEvolutionSSFM<1> for VelocityGauge1D<'a> {
 //                              LenthGauge
 //================================================================================
 #[derive(Clone, Copy)]
-pub struct LenthGauge1D<'a> {
+pub struct LenthGauge1D<'a, Field1D: Field<1>> {
     pub field: &'a Field1D,
 }
 
-impl<'a> LenthGauge1D<'a> {
+impl<'a, Field1D: Field<1>> LenthGauge1D<'a, Field1D> {
     pub fn new(field: &'a Field1D) -> Self {
         Self { field }
     }
@@ -88,7 +87,7 @@ impl<'a> LenthGauge1D<'a> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке длины
-impl<'a> GaugedEvolutionSSFM<1> for LenthGauge1D<'a> {
+impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<1> for LenthGauge1D<'a, Field1D> {
     type WF = WaveFunction1D;
 
     fn x_evol_half(
@@ -104,7 +103,7 @@ impl<'a> GaugedEvolutionSSFM<1> for LenthGauge1D<'a> {
             .for_each(|(psi_elem, x_point)| {
                 let potential_elem = potential([*x_point]);
                 let absorbing_potential_elem = absorbing_potential([*x_point]);
-                let scalar_potential_elem = self.field.scalar_potential(tcurrent, [*x_point]);
+                let scalar_potential_elem = self.field.scalar_potential([*x_point], tcurrent);
                 *psi_elem *= (-I
                     * 0.5
                     * dt
@@ -126,7 +125,7 @@ impl<'a> GaugedEvolutionSSFM<1> for LenthGauge1D<'a> {
             .for_each(|(psi_elem, x_point)| {
                 let potential_elem = potential([*x_point]);
                 let absorbing_potential_elem = absorbing_potential([*x_point]);
-                let scalar_potential_elem = self.field.scalar_potential(tcurrent, [*x_point]);
+                let scalar_potential_elem = self.field.scalar_potential([*x_point], tcurrent);
                 *psi_elem *=
                     (-I * dt * (potential_elem + absorbing_potential_elem - scalar_potential_elem))
                         .exp();

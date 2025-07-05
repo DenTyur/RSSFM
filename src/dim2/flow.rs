@@ -2,6 +2,7 @@ use crate::config::{C, F, I};
 use crate::dim2::{gauge::VelocityGauge2D, space::Xspace2D};
 use crate::macros::check_path;
 use crate::traits::{
+    field::Field,
     flow::{Flux, SurfaceFlow},
     wave_function::ValueAndSpaceDerivatives,
 };
@@ -75,7 +76,7 @@ impl<'a, G: Flux<2> + Send + Sync> SurfaceFlow<2, G> for Square<'a> {
 //                 Плотность потока и калибровка
 //============================================================================
 /// Плотность потока вероятности в калибровке скорости
-impl<'a> Flux<2> for VelocityGauge2D<'a> {
+impl<'a, Field2D: Field<2>> Flux<2> for VelocityGauge2D<'a, Field2D> {
     fn compute_flux(
         &self,
         x: [F; 2],
@@ -83,7 +84,7 @@ impl<'a> Flux<2> for VelocityGauge2D<'a> {
         psi2: &(impl ValueAndSpaceDerivatives<2> + Send + Sync),
         t: F,
     ) -> [C; 2] {
-        let vec_pot = self.field.vec_pot(t); // векторный потенциал
+        let vec_pot = self.field.vector_potential(t); // векторный потенциал
 
         let psi1_val = psi1.value(x);
         let psi2_val = psi2.value(x);

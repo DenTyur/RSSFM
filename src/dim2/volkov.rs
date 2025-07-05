@@ -1,12 +1,12 @@
 use super::gauge::{LenthGauge2D, VelocityGauge2D};
 use crate::config::{C, F, I, PI};
-use crate::traits::{volkov::VolkovGauge, wave_function::ValueAndSpaceDerivatives};
+use crate::traits::{field::Field, volkov::VolkovGauge, wave_function::ValueAndSpaceDerivatives};
 
 //=================================================================================
 //             фаза и множители при производных в разных калибровках
 //=================================================================================
 /// Фаза и множитель при производной в калибровке скорости
-impl<'a> VolkovGauge for VelocityGauge2D<'a> {
+impl<'a, Field2D: Field<2>> VolkovGauge for VelocityGauge2D<'a, Field2D> {
     fn compute_phase(&self, x: [F; 2], p: [F; 2], t: F) -> F {
         let p_sq = p[0].powi(2) + p[1].powi(2);
         let a = self.field.a(t);
@@ -19,10 +19,10 @@ impl<'a> VolkovGauge for VelocityGauge2D<'a> {
 }
 
 /// Фаза и множитель при производной в калибровке длины
-impl<'a> VolkovGauge for LenthGauge2D<'a> {
+impl<'a, Field2D: Field<2>> VolkovGauge for LenthGauge2D<'a, Field2D> {
     fn compute_phase(&self, x: [F; 2], p: [F; 2], t: F) -> F {
         let p_sq = p[0].powi(2) + p[1].powi(2);
-        let vec_pot = self.field.vec_pot(t);
+        let vec_pot = self.field.vector_potential(t);
         let a = self.field.a(t);
         let b = self.field.b(t);
         -0.5 * t * p_sq + (p[0] * x[0] + p[1] * x[1]) - (p[0] * vec_pot[0] + p[1] * vec_pot[1])
@@ -31,7 +31,7 @@ impl<'a> VolkovGauge for LenthGauge2D<'a> {
     }
 
     fn deriv_factor(&self, p: [F; 2], t: F) -> [C; 2] {
-        let vec_pot = self.field.vec_pot(t);
+        let vec_pot = self.field.vector_potential(t);
         [I * (p[0] - vec_pot[0]), I * (p[1] - vec_pot[1])]
     }
 }

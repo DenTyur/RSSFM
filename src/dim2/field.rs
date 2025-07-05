@@ -1,127 +1,102 @@
 use crate::config::{F, PI};
-use plotly::common::{Marker, Mode, Title};
-use plotly::layout::{Axis, Layout};
-use plotly::{Plot, Scatter};
-use rayon::prelude::*;
-use std::fs;
-use std::fs::File;
-use std::io::BufWriter;
+use crate::traits::field::Field;
 
-// ================================ 1e2d linear ====================================
-// pub struct Field2D {
-//     pub amplitude: F,
-//     pub omega: F,
-//     pub N: F,
-//     pub x_envelop: F,
-// }
-//
-// impl Field2D {
-//     pub fn new(amplitude: F, omega: F, N: F, x_envelop: F) -> Self {
-//         Self {
-//             amplitude,
-//             omega,
-//             N,
-//             x_envelop,
-//         }
-//     }
-//
-//     pub fn electric_field_time_dependence(&self, t: F) -> [F; 2] {
-//         // Возвращает электрическое поле в момент времени t вдоль
-//         // каждой из пространственных осей x0, x1 и т.д.: массив размерности dim.
-//         // Каждый элемент этого массива содержит электрическое поле
-//         // в момент времени t вдоль соответствующей оси.
-//         // Например, E0 = electric_fielf(2.)[0] - электрическое
-//         // поле в момент времени t=2 вдоль оси x0.
-//
-//         let mut electric_field: F = 0.;
-//
-//         if PI / self.omega - t > 0. {
-//             electric_field = -self.amplitude * F::sin(self.omega * t).powi(2);
-//         }
-//         [electric_field, 0.0]
-//     }
-//
-//     pub fn field_x_envelop(&self, x: F) -> F {
-//         // Пространственная огибающая электрического поля вдоль каждой из осей.
-//         F::cos(PI / 2. * x / self.x_envelop).powi(2)
-//     }
-//
-//     pub fn integrated_field_x_envelop(&self, x: F) -> F {
-//         0.5 * x + 0.25 * self.x_envelop * 2. / PI * F::sin(PI * x / self.x_envelop)
-//     }
-//
-//     pub fn electric_field(&self, t: F, x: [F; 2]) -> [F; 2] {
-//         // Электрическое поле вдоль каждой пространственной оси в момент времени t.
-//         [
-//             self.electric_field_time_dependence(t)[0] * self.field_x_envelop(x[0]),
-//             self.electric_field_time_dependence(t)[1] * self.field_x_envelop(x[1]),
-//         ]
-//     }
-//
-//     pub fn vec_pot(&self, t: F) -> [F; 2] {
-//         let vec_pot: F = 0.0;
-//         panic!("Векторный потенциал не реализован! Заглушка.");
-//         [vec_pot, vec_pot]
-//     }
-//
-//     pub fn a(&self, t: F) -> [F; 2] {
-//         let a: F = 0.0;
-//         panic!("Векторный потенциал не реализован! Заглушка.");
-//         [a, a]
-//     }
-//
-//     pub fn b(&self, t: F) -> F {
-//         let b: F = 0.0;
-//         panic!("Векторный потенциал не реализован! Заглушка.");
-//         b
-//     }
-//
-//     pub fn scalar_potential(&self, t: F, x: [F; 2]) -> F {
-//         let x0_point = x[0];
-//         let time_part0: F = self.electric_field_time_dependence(t)[0];
-//         let space_part0: F = match x0_point {
-//             x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
-//             x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
-//             _ => self.integrated_field_x_envelop(x0_point),
-//         };
-//
-//         let x1_point = x[1];
-//         let time_part1: F = self.electric_field_time_dependence(t)[1];
-//         let space_part1: F = match x1_point {
-//             x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
-//             x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
-//             _ => self.integrated_field_x_envelop(x1_point),
-//         };
-//         -time_part0 * space_part0 - time_part1 * space_part1
-//     }
-// }
-
-//===============================2e1d linear =======================================
-pub struct Field2D {
+/// 1e2d unipolar
+pub struct UnipolarPulse1e2d {
     pub amplitude: F,
     pub omega: F,
-    pub N: F,
     pub x_envelop: F,
 }
 
-impl Field2D {
-    pub fn new(amplitude: F, omega: F, N: F, x_envelop: F) -> Self {
+impl UnipolarPulse1e2d {
+    pub fn new(amplitude: F, omega: F, x_envelop: F) -> Self {
         Self {
             amplitude,
             omega,
-            N,
             x_envelop,
         }
     }
 
     pub fn electric_field_time_dependence(&self, t: F) -> [F; 2] {
-        // Возвращает электрическое поле в момент времени t вдоль
-        // каждой из пространственных осей x0, x1 и т.д.: массив размерности dim.
-        // Каждый элемент этого массива содержит электрическое поле
-        // в момент времени t вдоль соответствующей оси.
-        // Например, E0 = electric_fielf(2.)[0] - электрическое
-        // поле в момент времени t=2 вдоль оси x0.
+        let mut electric_field: F = 0.;
+        if PI / self.omega - t > 0. {
+            electric_field = -self.amplitude * F::sin(self.omega * t).powi(2);
+        }
+        [electric_field, 0.0]
+    }
 
+    pub fn field_x_envelop(&self, x: F) -> F {
+        // Пространственная огибающая электрического поля вдоль каждой из осей.
+        F::cos(PI / 2. * x / self.x_envelop).powi(2)
+    }
+
+    pub fn integrated_field_x_envelop(&self, x: F) -> F {
+        0.5 * x + 0.25 * self.x_envelop * 2. / PI * F::sin(PI * x / self.x_envelop)
+    }
+
+    pub fn electric_field(&self, t: F, x: [F; 2]) -> [F; 2] {
+        // Электрическое поле вдоль каждой пространственной оси в момент времени t.
+        [
+            self.electric_field_time_dependence(t)[0] * self.field_x_envelop(x[0]),
+            self.electric_field_time_dependence(t)[1] * self.field_x_envelop(x[1]),
+        ]
+    }
+}
+
+impl Field<2> for UnipolarPulse1e2d {
+    fn vector_potential(&self, t: F) -> [F; 2] {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let vec_pot: F = 0.0;
+        [vec_pot, vec_pot]
+    }
+
+    fn scalar_potential(&self, x: [F; 2], t: F) -> F {
+        let x0_point = x[0];
+        let time_part0: F = self.electric_field_time_dependence(t)[0];
+        let space_part0: F = match x0_point {
+            x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
+            x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
+            _ => self.integrated_field_x_envelop(x0_point),
+        };
+
+        let x1_point = x[1];
+        let time_part1: F = self.electric_field_time_dependence(t)[1];
+        let space_part1: F = match x1_point {
+            x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
+            x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
+            _ => self.integrated_field_x_envelop(x1_point),
+        };
+        -time_part0 * space_part0 - time_part1 * space_part1
+    }
+    fn a(&self, t: F) -> [F; 2] {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let a: F = 0.0;
+        [a, a]
+    }
+    fn b(&self, t: F) -> F {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let b: F = 0.0;
+        b
+    }
+}
+
+/// 2e1d unipolar
+pub struct UnipolarPulse2e1d {
+    pub amplitude: F,
+    pub omega: F,
+    pub x_envelop: F,
+}
+
+impl UnipolarPulse2e1d {
+    pub fn new(amplitude: F, omega: F, x_envelop: F) -> Self {
+        Self {
+            amplitude,
+            omega,
+            x_envelop,
+        }
+    }
+
+    pub fn electric_field_time_dependence(&self, t: F) -> [F; 2] {
         let mut electric_field: F = 0.;
 
         if PI / self.omega - t > 0. {
@@ -147,24 +122,6 @@ impl Field2D {
         ]
     }
 
-    pub fn vec_pot(&self, t: F) -> [F; 2] {
-        let vec_pot: F = 0.0;
-        println!("Векторный потенциал не реализован! Заглушка.");
-        [vec_pot, vec_pot]
-    }
-
-    pub fn a(&self, t: F) -> [F; 2] {
-        let a: F = 0.0;
-        println!("Векторный потенциал не реализован! Заглушка.");
-        [a, a]
-    }
-
-    pub fn b(&self, t: F) -> F {
-        let b: F = 0.0;
-        println!("Векторный потенциал не реализован! Заглушка.");
-        b
-    }
-
     pub fn scalar_potential(&self, t: F, x: [F; 2]) -> F {
         let x0_point = x[0];
         let time_part0: F = self.electric_field_time_dependence(t)[0];
@@ -185,148 +142,161 @@ impl Field2D {
     }
 }
 
-// ========================== circular =======================================
-// pub struct Field2D {
-//     pub amplitude: F,
-//     pub omega: F,
-//     pub N: F,
-//     pub x_envelop: F,
-// }
-//
-// impl Field2D {
-//     pub fn new(amplitude: F, omega: F, N: F, x_envelop: F) -> Self {
-//         Self {
-//             amplitude,
-//             omega,
-//             N,
-//             x_envelop,
-//         }
-//     }
-//
-//     pub fn electric_field_time_dependence(&self, t: F) -> [F; 2] {
-//         // Возвращает электрическое поле в момент времени t вдоль
-//         // каждой из пространственных осей x0, x1 и т.д.: массив размерности dim.
-//         // Каждый элемент этого массива содержит электрическое поле
-//         // в момент времени t вдоль соответствующей оси.
-//         // Например, E0 = electric_fielf(2.)[0] - электрическое
-//         // поле в момент времени t=2 вдоль оси x0.
-//
-//         let mut electric_field: [F; 2] = [0., 0.];
-//
-//         if 2. * PI * self.N / self.omega - t > 0. {
-//             electric_field[0] = -self.amplitude
-//                 * F::sin(self.omega * t / (2. * self.N)).powi(2)
-//                 * F::sin(self.omega * t);
-//             electric_field[1] = -self.amplitude
-//                 * F::sin(self.omega * t / (2. * self.N)).powi(2)
-//                 * F::cos(self.omega * t);
-//         }
-//         electric_field
-//     }
-//
-//     pub fn electric_field(&self, t: F, x: F, y: F) -> [F; 2] {
-//         // Электрическое поле вдоль каждой пространственной оси в момент времени t.
-//         [
-//             self.electric_field_time_dependence(t)[0],
-//             self.electric_field_time_dependence(t)[1],
-//         ]
-//     }
-//
-//     pub fn scalar_potential(&self, t: F, x: [F; 2]) -> F {
-//         -self.electric_field_time_dependence(t)[0] * x[0]
-//             - self.electric_field_time_dependence(t)[1] * x[1]
-//     }
-//
-//     // Векторный потенциал
-//     pub fn vec_pot(&self, t: F) -> [F; 2] {
-//         let mut vec_pot_x: F = 0.0;
-//         let mut vec_pot_y: F = 0.0;
-//         let compute_vec_pot_x = |tau: F| {
-//             self.amplitude
-//                 * (-1.0
-//                     + F::cos(tau) * (1.0 - self.N.powi(2) + self.N.powi(2) * F::cos(tau / self.N))
-//                     + self.N * F::sin(tau) * F::sin(tau / self.N))
-//                 / (2.0 * self.omega * (-1.0 + self.N.powi(2)))
-//         };
-//         let compute_vec_pot_y = |tau: F| {
-//             self.amplitude
-//                 * (F::sin(tau) * (-1.0 + self.N.powi(2) - self.N.powi(2) * F::cos(tau / self.N))
-//                     + self.N * F::cos(tau) * F::sin(tau / self.N))
-//                 / (2.0 * self.omega * (-1.0 + self.N.powi(2)))
-//         };
-//
-//         let tau: F = self.omega * t;
-//         let period: F = 2. * PI * self.N / self.omega;
-//         if t < period {
-//             vec_pot_x = compute_vec_pot_x(tau);
-//             vec_pot_y = compute_vec_pot_y(tau);
-//         } else {
-//             vec_pot_x = compute_vec_pot_x(period);
-//             vec_pot_y = compute_vec_pot_y(period);
-//         }
-//         [vec_pot_x, vec_pot_y]
-//
-//         // if 2. * PI * self.N / self.omega - t > 0. {
-//         //     vec_pot[0] = self.amplitude / self.omega
-//         //         * F::sin(self.omega * t / (2. * self.N)).powi(2)
-//         //         * F::sin(self.omega * t);
-//         //     vec_pot[1] = self.amplitude / self.omega
-//         //         * F::sin(self.omega * t / (2. * self.N)).powi(2)
-//         //         * F::cos(self.omega * t);
-//         // }
-//         // vec_pot
-//     }
-//
-//     // интеграл от векторного потенциала
-//     pub fn a(&self, t: F) -> [F; 2] {
-//         let tau: F = self.omega * t;
-//         let mut a: [F; 2] = [0.0, 0.0];
-//
-//         // a[0] = self.amplitude
-//         //     * t
-//         //     * (-1.0
-//         //         + F::cos(tau) * (1.0 - self.N.powi(2) + self.N.powi(2) * F::cos(tau / self.N))
-//         //         + self.N * F::sin(tau) * F::sin(tau / self.N))
-//         //     / (2.0 * (-1.0 + self.N.powi(2)) * self.omega);
-//         a[0] = self.amplitude
-//             * (-(-1.0 + self.N.powi(2)) * tau
-//                 + F::sin(tau)
-//                     * (-(-1.0 + self.N.powi(2)).powi(2)
-//                         + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
-//                 - 2.0 * self.N.powi(3) * F::cos(tau) * F::sin(tau / self.N))
-//             / (2.0 * (self.N.powi(2) - 1.0).powi(2) * self.omega.powi(2));
-//
-//         a[1] = self.amplitude
-//             * (1.0 - 3.0 * self.N.powi(2)
-//                 + F::cos(tau)
-//                     * (-(-1.0 + self.N.powi(2)).powi(2)
-//                         + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
-//                 + 2.0 * self.N.powi(3) * F::sin(tau) * F::sin(tau / self.N))
-//             / (2.0 * (self.N.powi(2) - 1.0).powi(2) * self.omega.powi(2));
-//
-//         a
-//     }
-//
-//     // интеграл от квадрата векторного потенциала
-//     pub fn b(&self, t: F) -> F {
-//         let tau: F = self.omega * t;
-//
-//         let term1: F =
-//             self.amplitude.powi(2) / (16.0 * (-1.0 + self.N.powi(2)).powi(3) * self.omega.powi(3));
-//         let term2: F = 8.0
-//             * (-(-1.0 + self.N.powi(2)).powi(2)
-//                 + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
-//             * F::sin(tau);
-//         let term3: F = 8.0
-//             * self.N.powi(3)
-//             * ((-1.0 + self.N.powi(2)).powi(2) - 2.0 * F::cos(tau))
-//             * F::sin(tau / self.N);
-//         let term4: F = (-1.0 + self.N.powi(2))
-//             * (2.0 * (4.0 - 3.0 * self.N.powi(2) + 3.0 * self.N.powi(4)) * tau
-//                 + self.N.powi(3) * (-1.0 + self.N.powi(2)) * F::sin(2.0 * tau / self.N));
-//         term1 * (-term2 - term3 + term4)
-//     }
-// }
+impl Field<2> for UnipolarPulse2e1d {
+    fn vector_potential(&self, t: F) -> [F; 2] {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let vec_pot: F = 0.0;
+        [vec_pot, vec_pot]
+    }
+
+    fn scalar_potential(&self, x: [F; 2], t: F) -> F {
+        let x0_point = x[0];
+        let time_part0: F = self.electric_field_time_dependence(t)[0];
+        let space_part0: F = match x0_point {
+            x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
+            x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
+            _ => self.integrated_field_x_envelop(x0_point),
+        };
+
+        let x1_point = x[1];
+        let time_part1: F = self.electric_field_time_dependence(t)[1];
+        let space_part1: F = match x1_point {
+            x if x <= -self.x_envelop => self.integrated_field_x_envelop(-self.x_envelop),
+            x if x >= self.x_envelop => self.integrated_field_x_envelop(self.x_envelop),
+            _ => self.integrated_field_x_envelop(x1_point),
+        };
+        -time_part0 * space_part0 - time_part1 * space_part1
+    }
+
+    fn a(&self, t: F) -> [F; 2] {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let a: F = 0.0;
+        [a, a]
+    }
+    fn b(&self, t: F) -> F {
+        panic!("Векторный потенциал не реализован! Заглушка.");
+        let b: F = 0.0;
+        b
+    }
+}
+
+/// Circular
+pub struct CircularField1e2d {
+    pub amplitude: F,
+    pub omega: F,
+    pub N: F,
+    pub x_envelop: F,
+}
+
+impl CircularField1e2d {
+    pub fn new(amplitude: F, omega: F, N: F, x_envelop: F) -> Self {
+        Self {
+            amplitude,
+            omega,
+            N,
+            x_envelop,
+        }
+    }
+
+    pub fn electric_field_time_dependence(&self, t: F) -> [F; 2] {
+        let mut electric_field: [F; 2] = [0., 0.];
+
+        if 2. * PI * self.N / self.omega - t > 0. {
+            electric_field[0] = -self.amplitude
+                * F::sin(self.omega * t / (2. * self.N)).powi(2)
+                * F::sin(self.omega * t);
+            electric_field[1] = -self.amplitude
+                * F::sin(self.omega * t / (2. * self.N)).powi(2)
+                * F::cos(self.omega * t);
+        }
+        electric_field
+    }
+
+    pub fn electric_field(&self, t: F, x: F, y: F) -> [F; 2] {
+        // Электрическое поле вдоль каждой пространственной оси в момент времени t.
+        [
+            self.electric_field_time_dependence(t)[0],
+            self.electric_field_time_dependence(t)[1],
+        ]
+    }
+}
+
+impl Field<2> for CircularField1e2d {
+    fn vector_potential(&self, t: F) -> [F; 2] {
+        let mut vec_pot_x: F = 0.0;
+        let mut vec_pot_y: F = 0.0;
+        let compute_vec_pot_x = |tau: F| {
+            self.amplitude
+                * (-1.0
+                    + F::cos(tau) * (1.0 - self.N.powi(2) + self.N.powi(2) * F::cos(tau / self.N))
+                    + self.N * F::sin(tau) * F::sin(tau / self.N))
+                / (2.0 * self.omega * (-1.0 + self.N.powi(2)))
+        };
+        let compute_vec_pot_y = |tau: F| {
+            self.amplitude
+                * (F::sin(tau) * (-1.0 + self.N.powi(2) - self.N.powi(2) * F::cos(tau / self.N))
+                    + self.N * F::cos(tau) * F::sin(tau / self.N))
+                / (2.0 * self.omega * (-1.0 + self.N.powi(2)))
+        };
+
+        let tau: F = self.omega * t;
+        let period: F = 2. * PI * self.N / self.omega;
+        if t < period {
+            vec_pot_x = compute_vec_pot_x(tau);
+            vec_pot_y = compute_vec_pot_y(tau);
+        } else {
+            vec_pot_x = compute_vec_pot_x(period);
+            vec_pot_y = compute_vec_pot_y(period);
+        }
+        [vec_pot_x, vec_pot_y]
+    }
+
+    fn scalar_potential(&self, x: [F; 2], t: F) -> F {
+        -self.electric_field_time_dependence(t)[0] * x[0]
+            - self.electric_field_time_dependence(t)[1] * x[1]
+    }
+
+    fn a(&self, t: F) -> [F; 2] {
+        let tau: F = self.omega * t;
+        let mut a: [F; 2] = [0.0, 0.0];
+
+        a[0] = self.amplitude
+            * (-(-1.0 + self.N.powi(2)) * tau
+                + F::sin(tau)
+                    * (-(-1.0 + self.N.powi(2)).powi(2)
+                        + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
+                - 2.0 * self.N.powi(3) * F::cos(tau) * F::sin(tau / self.N))
+            / (2.0 * (self.N.powi(2) - 1.0).powi(2) * self.omega.powi(2));
+
+        a[1] = self.amplitude
+            * (1.0 - 3.0 * self.N.powi(2)
+                + F::cos(tau)
+                    * (-(-1.0 + self.N.powi(2)).powi(2)
+                        + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
+                + 2.0 * self.N.powi(3) * F::sin(tau) * F::sin(tau / self.N))
+            / (2.0 * (self.N.powi(2) - 1.0).powi(2) * self.omega.powi(2));
+
+        a
+    }
+    fn b(&self, t: F) -> F {
+        let tau: F = self.omega * t;
+
+        let term1: F =
+            self.amplitude.powi(2) / (16.0 * (-1.0 + self.N.powi(2)).powi(3) * self.omega.powi(3));
+        let term2: F = 8.0
+            * (-(-1.0 + self.N.powi(2)).powi(2)
+                + (self.N.powi(2) + self.N.powi(4)) * F::cos(tau / self.N))
+            * F::sin(tau);
+        let term3: F = 8.0
+            * self.N.powi(3)
+            * ((-1.0 + self.N.powi(2)).powi(2) - 2.0 * F::cos(tau))
+            * F::sin(tau / self.N);
+        let term4: F = (-1.0 + self.N.powi(2))
+            * (2.0 * (4.0 - 3.0 * self.N.powi(2) + 3.0 * self.N.powi(4)) * tau
+                + self.N.powi(3) * (-1.0 + self.N.powi(2)) * F::sin(2.0 * tau / self.N));
+        term1 * (-term2 - term3 + term4)
+    }
+}
 // #[cfg(test)]
 // mod tests {
 //     use super::*;

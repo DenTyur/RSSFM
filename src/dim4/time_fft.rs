@@ -2,7 +2,7 @@ use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::fft_maker::FftMaker1D;
 use crate::dim4::{
-    fft_maker::FftMaker4D, field::Field4D, gauge::LenthGauge4D, space::Xspace4D, ssfm::SSFM4D,
+    fft_maker::FftMaker4D, gauge::LenthGauge4D, space::Xspace4D, ssfm::SSFM4D,
     wave_function::WaveFunction4D,
 };
 use crate::measure_time;

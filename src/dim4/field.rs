@@ -1,11 +1,5 @@
 use crate::config::{F, PI};
-use plotly::common::{Marker, Mode, Title};
-use plotly::layout::{Axis, Layout};
-use plotly::{Plot, Scatter};
-use rayon::prelude::*;
-use std::fs;
-use std::fs::File;
-use std::io::BufWriter;
+use crate::traits::field::Field;
 
 pub struct Field4D {
     pub amplitude: F,
