@@ -35,7 +35,6 @@ impl WaveFunction4D {
     pub const DIM: usize = 4;
 
     pub fn new(psi: Array4<C>, x: &Xspace4D) -> Self {
-        let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
         let p = Pspace4D::init(x);
         Self {
             psi,
@@ -48,70 +47,11 @@ impl WaveFunction4D {
         }
     }
 
-    pub fn init_derivatives(&mut self) {
+    pub fn init_spectral_derivatives(&mut self) {
         self.dpsi_d0 = Some(self.psi.clone());
         self.dpsi_d0 = Some(self.psi.clone());
         self.dpsi_d0 = Some(self.psi.clone());
         self.dpsi_d0 = Some(self.psi.clone());
-    }
-
-    pub fn init_from_npy(psi_path: &str, x: Xspace4D) -> Self {
-        let reader = File::open(psi_path).unwrap();
-        let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
-        let p = Pspace4D::init(&x);
-        Self {
-            psi: Array::<C, Ix4>::read_npy(reader).unwrap(),
-            dpsi_d0: None,
-            dpsi_d1: None,
-            dpsi_d2: None,
-            dpsi_d3: None,
-            x,
-            p,
-        }
-    }
-
-    pub fn init_from_hdf5(psi_path: &str) -> Self {
-        let psi: Array4<C> =
-            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
-                .unwrap()
-                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
-        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x1", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let x2: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x2", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let x3: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x3", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let dx0 = x0[[1]] - x0[[0]];
-        let dx1 = x1[[1]] - x1[[0]];
-        let dx2 = x2[[1]] - x2[[0]];
-        let dx3 = x3[[1]] - x3[[0]];
-        let xspace = Xspace4D {
-            x0: [x0[[0]], x1[[0]], x2[[0]], x3[[0]]],
-            dx: [dx0, dx1, dx2, dx3],
-            n: [x0.len(), x1.len(), x2.len(), x3.len()],
-            grid: [x0, x1, x2, x3],
-        };
-
-        let p = Pspace4D::init(&xspace);
-        let dpsi_d0 = None;
-        let dpsi_d1 = None;
-        let dpsi_d2 = None;
-        let dpsi_d3 = None;
-        Self {
-            psi,
-            x: xspace,
-            p,
-            dpsi_d0,
-            dpsi_d1,
-            dpsi_d2,
-            dpsi_d3,
-        }
     }
 
     pub fn plot_slice_log(
@@ -493,6 +433,65 @@ impl WaveFunction<4> for WaveFunction4D {
         let writer = BufWriter::new(File::create(path)?);
         self.psi.write_npy(writer)?;
         Ok(())
+    }
+
+    fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
+        let reader = File::open(psi_path).unwrap();
+        // let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
+        let p = Pspace4D::init(&x);
+        Self {
+            psi: Array::<C, Ix4>::read_npy(reader).unwrap(),
+            dpsi_d0: None,
+            dpsi_d1: None,
+            dpsi_d2: None,
+            dpsi_d3: None,
+            x,
+            p,
+        }
+    }
+
+    fn init_from_hdf5(psi_path: &str) -> Self {
+        let psi: Array4<C> =
+            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
+                .unwrap()
+                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
+        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x1", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let x2: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x2", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let x3: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x3", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let dx0 = x0[[1]] - x0[[0]];
+        let dx1 = x1[[1]] - x1[[0]];
+        let dx2 = x2[[1]] - x2[[0]];
+        let dx3 = x3[[1]] - x3[[0]];
+        let xspace = Xspace4D {
+            x0: [x0[[0]], x1[[0]], x2[[0]], x3[[0]]],
+            dx: [dx0, dx1, dx2, dx3],
+            n: [x0.len(), x1.len(), x2.len(), x3.len()],
+            grid: [x0, x1, x2, x3],
+        };
+
+        let p = Pspace4D::init(&xspace);
+        let dpsi_d0 = None;
+        let dpsi_d1 = None;
+        let dpsi_d2 = None;
+        let dpsi_d3 = None;
+        Self {
+            psi,
+            x: xspace,
+            p,
+            dpsi_d0,
+            dpsi_d1,
+            dpsi_d2,
+            dpsi_d3,
+        }
     }
 }
 //============================================================================================

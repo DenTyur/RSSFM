@@ -22,8 +22,8 @@ use std::io::BufWriter;
 #[derive(Debug, Clone)]
 pub struct WaveFunction2D {
     pub psi: Array2<C>,
-    pub dpsi_dx: Array2<C>,
-    pub dpsi_dy: Array2<C>,
+    pub dpsi_dx: Option<Array2<C>>,
+    pub dpsi_dy: Option<Array2<C>>,
     pub x: Xspace2D,
     pub p: Pspace2D,
 }
@@ -32,19 +32,23 @@ impl WaveFunction2D {
     pub const DIM: usize = 2;
 
     pub fn new(psi: Array2<C>, x: Xspace2D) -> Self {
-        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let p = Pspace2D::init(&x);
         Self {
             psi,
             x,
             p,
-            dpsi_dx,
-            dpsi_dy,
+            dpsi_dx: None,
+            dpsi_dy: None,
         }
     }
 
-    // // Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
+    /// Инициализирует пустые массивы для спектральных производных
+    pub fn init_spectral_derivatives(&mut self) {
+        self.dpsi_dx = Some(self.psi.clone());
+        self.dpsi_dy = Some(self.psi.clone());
+    }
+
+    /// Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
     pub fn init_oscillator_2d(x: Xspace2D) -> Self {
         let mut psi: Array<C, Ix2> = Array::zeros((x.n[0], x.n[1]));
         psi.axis_iter_mut(Axis(0))
@@ -58,61 +62,13 @@ impl WaveFunction2D {
                         *psi_elem = (-0.5 * (x_i.powi(2) + y_j.powi(2))).exp() + 0. * I;
                     })
             });
-        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let p = Pspace2D::init(&x);
         Self {
             psi,
             x,
             p,
-            dpsi_dx,
-            dpsi_dy,
-        }
-    }
-
-    pub fn init_from_npy(psi_path: &str, x: Xspace2D) -> Self {
-        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let reader = File::open(psi_path).unwrap();
-        let p = Pspace2D::init(&x);
-        Self {
-            psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
-            x,
-            p,
-            dpsi_dx,
-            dpsi_dy,
-        }
-    }
-
-    pub fn init_from_hdf5(psi_path: &str) -> Self {
-        let psi: Array2<C> =
-            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
-                .unwrap()
-                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
-        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x1", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let dx0 = x0[[1]] - x0[[0]];
-        let dx1 = x1[[1]] - x1[[0]];
-        let xspace = Xspace2D {
-            x0: [x0[[0]], x1[[0]]],
-            dx: [dx0, dx1],
-            n: [x0.len(), x1.len()],
-            grid: [x0, x1],
-        };
-
-        let p = Pspace2D::init(&xspace);
-        let dpsi_dx: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
-        Self {
-            psi,
-            x: xspace,
-            p,
-            dpsi_dx,
-            dpsi_dy,
+            dpsi_dx: None,
+            dpsi_dy: None,
         }
     }
 
@@ -187,7 +143,14 @@ impl ValueAndSpaceDerivatives<2> for WaveFunction2D {
         let ix = ((x[0] - x_min) / self.x.dx[0]).round() as usize;
         let iy = ((x[1] - y_min) / self.x.dx[1]).round() as usize;
         // возвращаем производную
-        [self.dpsi_dx[(ix, iy)], self.dpsi_dy[(ix, iy)]]
+        if self.dpsi_dx.is_none() || self.dpsi_dy.is_none() {
+            panic!("Derivatives are required but not available");
+        }
+
+        [
+            self.dpsi_dx.as_ref().unwrap()[(ix, iy)],
+            self.dpsi_dy.as_ref().unwrap()[(ix, iy)],
+        ]
     }
 
     fn value(&self, x: [F; Self::DIM]) -> C {
@@ -307,6 +270,52 @@ impl WaveFunction<2> for WaveFunction2D {
         let writer = BufWriter::new(File::create(path)?);
         self.psi.write_npy(writer)?;
         Ok(())
+    }
+
+    fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
+        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
+        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
+        let reader = File::open(psi_path).unwrap();
+        let p = Pspace2D::init(&x);
+        Self {
+            psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
+            x,
+            p,
+            dpsi_dx,
+            dpsi_dy,
+        }
+    }
+
+    fn init_from_hdf5(psi_path: &str) -> Self {
+        let psi: Array2<C> =
+            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
+                .unwrap()
+                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
+        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let x1: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x1", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let dx0 = x0[[1]] - x0[[0]];
+        let dx1 = x1[[1]] - x1[[0]];
+        let xspace = Xspace2D {
+            x0: [x0[[0]], x1[[0]]],
+            dx: [dx0, dx1],
+            n: [x0.len(), x1.len()],
+            grid: [x0, x1],
+        };
+
+        let p = Pspace2D::init(&xspace);
+        let dpsi_dx: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
+        let dpsi_dy: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
+        Self {
+            psi,
+            x: xspace,
+            p,
+            dpsi_dx,
+            dpsi_dy,
+        }
     }
 }
 //=================================================================================

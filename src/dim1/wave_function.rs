@@ -22,7 +22,7 @@ use std::io::BufWriter;
 #[derive(Debug, Clone)]
 pub struct WaveFunction1D {
     pub psi: Array1<C>,
-    pub dpsi_dx: Array1<C>,
+    pub dpsi_dx: Option<Array1<C>>,
     pub x: Xspace1D,
     pub p: Pspace1D,
 }
@@ -31,47 +31,18 @@ impl WaveFunction1D {
     pub const DIM: usize = 1;
 
     pub fn new(psi: Array1<C>, x: Xspace1D) -> Self {
-        let dpsi_dx: Array1<C> = Array::zeros(x.n[0]);
         let p = Pspace1D::init(&x);
-        Self { psi, x, p, dpsi_dx }
-    }
-
-    pub fn init_from_npy(psi_path: &str, x: Xspace1D) -> Self {
-        let dpsi_dx: Array1<C> = Array::zeros(x.n[0]);
-        let reader = File::open(psi_path).unwrap();
-        let p = Pspace1D::init(&x);
-        Self {
-            psi: Array::<C, Ix1>::read_npy(reader).unwrap(),
-            x,
-            p,
-            dpsi_dx,
-        }
-    }
-
-    pub fn init_from_hdf5(psi_path: &str) -> Self {
-        let psi: Array1<C> =
-            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
-                .unwrap()
-                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
-        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
-            .unwrap()
-            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
-        let dx = x0[[1]] - x0[[0]];
-        let xspace = Xspace1D {
-            x0: [x0[[0]]],
-            dx: [dx],
-            n: [x0.len()],
-            grid: [x0],
-        };
-
-        let p = Pspace1D::init(&xspace);
-        let dpsi_dx: Array1<C> = Array::zeros(xspace.n[0]);
         Self {
             psi,
-            x: xspace,
+            x,
             p,
-            dpsi_dx,
+            dpsi_dx: None,
         }
+    }
+
+    /// Инициализирует пустые массивы для спектральных производных
+    pub fn init_spectral_derivatives(&mut self) {
+        self.dpsi_dx = Some(self.psi.clone());
     }
 
     pub fn plot_log(&self, file_path: &str) {
@@ -210,7 +181,11 @@ impl ValueAndSpaceDerivatives<1> for WaveFunction1D {
         let x_min = self.x.grid[0][[0]];
         let ix = ((x[0] - x_min) / self.x.dx[0]).round() as usize;
         // возвращаем производную
-        [self.dpsi_dx[(ix)]]
+        if self.dpsi_dx.is_none() {
+            panic!("Derivatives are required but not available");
+        }
+
+        [self.dpsi_dx.as_ref().unwrap()[ix]]
     }
 
     fn value(&self, x: [F; Self::DIM]) -> C {
@@ -218,7 +193,7 @@ impl ValueAndSpaceDerivatives<1> for WaveFunction1D {
         let x_min = self.x.grid[0][[0]];
         let ix = ((x[0] - x_min) / self.x.dx[0]).round() as usize;
         // возвращаем значение
-        self.psi[(ix)]
+        self.psi[ix]
     }
 }
 
@@ -301,6 +276,44 @@ impl WaveFunction<1> for WaveFunction1D {
         let writer = BufWriter::new(File::create(path)?);
         self.psi.write_npy(writer)?;
         Ok(())
+    }
+
+    fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
+        let dpsi_dx: Array1<C> = Array::zeros(x.n[0]);
+        let reader = File::open(psi_path).unwrap();
+        let p = Pspace1D::init(&x);
+        Self {
+            psi: Array::<C, Ix1>::read_npy(reader).unwrap(),
+            x,
+            p,
+            dpsi_dx,
+        }
+    }
+
+    fn init_from_hdf5(psi_path: &str) -> Self {
+        let psi: Array1<C> =
+            hdf5_interface::read_from_hdf5_complex(psi_path, "psi", Some("WaveFunction"))
+                .unwrap()
+                .mapv_into(|x| x as C); // преобразуем в нужный тип данных
+        let x0: Array1<F> = hdf5_interface::read_from_hdf5(psi_path, "x0", Some("Xspace"))
+            .unwrap()
+            .mapv_into(|x| x as F); // преобразуем в нужный тип данных
+        let dx = x0[[1]] - x0[[0]];
+        let xspace = Xspace1D {
+            x0: [x0[[0]]],
+            dx: [dx],
+            n: [x0.len()],
+            grid: [x0],
+        };
+
+        let p = Pspace1D::init(&xspace);
+        let dpsi_dx: Array1<C> = Array::zeros(xspace.n[0]);
+        Self {
+            psi,
+            x: xspace,
+            p,
+            dpsi_dx,
+        }
     }
 }
 //=================================================================================

@@ -1,6 +1,7 @@
 use crate::field;
 use field::Field2D;
 
+/// Калибровка скорости без A^2
 #[derive(Clone, Copy)]
 pub struct VelocityGauge<'a> {
     // без A^2
@@ -13,6 +14,7 @@ impl<'a> VelocityGauge<'a> {
     }
 }
 
+/// Калибровак длины
 #[derive(Clone, Copy)]
 pub struct LenthGauge<'a> {
     pub field: &'a Field2D,
