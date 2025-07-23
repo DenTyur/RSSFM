@@ -113,7 +113,7 @@ impl WaveFunction1D {
             .iter()
             .zip(a.iter_mut())
             .par_bridge()
-            .for_each(|(psi_elem, mut a_elem)| {
+            .for_each(|(psi_elem, a_elem)| {
                 *a_elem = psi_elem.im.powi(2) + psi_elem.re.powi(2);
             });
 

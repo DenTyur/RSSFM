@@ -5,8 +5,6 @@ use crate::macros::check_path;
 use ndarray::prelude::*;
 use ndarray::{Array1, Array2, Zip};
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
-use num_complex::Complex;
-use rayon::prelude::*;
 use rayon::prelude::*;
 use std::fs::File;
 use std::io::BufWriter;

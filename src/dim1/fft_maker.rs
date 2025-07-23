@@ -46,7 +46,7 @@ impl FftMaker<Ix1> for FftMaker1D {
     fn modify_psi(&mut self, wf: &mut WaveFunction1D) {
         multizip((wf.psi.iter_mut(), wf.x.grid[0].iter()))
             .par_bridge()
-            .for_each(|(mut psi_elem, x_point)| {
+            .for_each(|(psi_elem, x_point)| {
                 *psi_elem *= wf.x.dx[0] / (2. * PI).sqrt() * (-I * (wf.p.p0[0] * *x_point)).exp();
             });
     }
@@ -54,7 +54,7 @@ impl FftMaker<Ix1> for FftMaker1D {
     fn demodify_psi(&mut self, wf: &mut WaveFunction1D) {
         multizip((wf.psi.iter_mut(), wf.x.grid[0].iter()))
             .par_bridge()
-            .for_each(|(mut psi_elem, x_point)| {
+            .for_each(|(psi_elem, x_point)| {
                 *psi_elem *= (2. * PI).sqrt() / wf.x.dx[0] * (I * (wf.p.p0[0] * x_point)).exp();
             });
     }

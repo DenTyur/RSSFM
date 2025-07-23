@@ -1,4 +1,4 @@
-use crate::{config::F, dim2::space::Xspace2D};
+use crate::config::F;
 
 /// #Аналитические атомные потенциалы
 

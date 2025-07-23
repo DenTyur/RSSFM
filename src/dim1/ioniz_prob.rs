@@ -1,25 +1,14 @@
 use super::{
-    fft_maker::FftMaker1D,
-    space::{Pspace1D, Xspace1D},
+    space::Xspace1D,
     wave_function::WaveFunction1D,
 };
 use crate::common::tspace::Tspace;
-use crate::config::{C, F, I, PI};
-use crate::macros::check_path;
-use crate::traits::{
-    fft_maker::FftMaker,
-    wave_function::{ValueAndSpaceDerivatives, WaveFunction},
-};
+use crate::config::F;
 use crate::utils::hdf5_interface;
-use itertools::multizip;
 use ndarray::prelude::*;
 use ndarray::Array1;
-use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
-use num_complex::Complex;
 use plotters::prelude::*;
 use rayon::prelude::*;
-use std::fs::File;
-use std::io::BufWriter;
 
 #[derive(Debug, Clone)]
 pub struct IonizProb1D<const N: usize> {
@@ -98,7 +87,7 @@ impl<const N: usize> IonizProb1D<N> {
             .margin(10)
             .x_label_area_size(40)
             .y_label_area_size(50)
-            .build_cartesian_2d((t[0]..t[t.len() - 1].into()), 0.0f64..y_max as f64 * 1.1)
+            .build_cartesian_2d(t[0]..t[t.len() - 1].into(), 0.0f64..y_max as f64 * 1.1)
             .unwrap();
 
         chart

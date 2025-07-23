@@ -1,5 +1,4 @@
 use crate::config::{F, PI};
-use crate::traits::field::Field;
 
 pub struct Field4D {
     pub amplitude: F,

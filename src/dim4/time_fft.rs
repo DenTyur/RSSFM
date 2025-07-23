@@ -2,23 +2,14 @@ use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::fft_maker::FftMaker1D;
 use crate::dim4::{
-    fft_maker::FftMaker4D, gauge::LenthGauge4D, space::Xspace4D, ssfm::SSFM4D,
+    space::Xspace4D,
     wave_function::WaveFunction4D,
 };
-use crate::measure_time;
-use crate::traits::fft_maker::{self, FftMaker};
-use crate::traits::{
-    flow::{Flux, SurfaceFlow},
-    space::Space,
-    ssfm::SSFM,
-    tsurff::Tsurff,
-    wave_function::WaveFunction,
-};
+use crate::traits::fft_maker::FftMaker;
+use crate::traits::tsurff::Tsurff;
 use ndarray::prelude::*;
-use plotters::coord::Shift;
 use plotters::prelude::*;
 use rayon::prelude::*;
-use std::time::Instant;
 
 // плохо написано, но работает:)
 pub struct TimeFFT {

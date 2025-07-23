@@ -1,7 +1,5 @@
 use crate::config::F;
 use ndarray::{Array1, Array2};
-use plotters::coord::Shift;
-use plotters::drawing::DrawingAreaErrorKind;
 use plotters::prelude::*;
 
 pub fn plot_heatmap_logscale(
