@@ -2,7 +2,7 @@ use rssfm::common::tspace::Tspace;
 use rssfm::config::F;
 use rssfm::dim2::ioniz_prob::IonizProb2D;
 use rssfm::dim2::{
-    field::Field2D,
+    field::UnipolarPulse2e1d,
     gauge::{LenthGauge2D, VelocityGauge2D},
     space::Xspace2D,
     ssfm::SSFM2D,
@@ -27,7 +27,7 @@ fn main() {
     let out_prefix = "./out";
 
     // задаем параметры временной сетки
-    let mut t = Tspace::new(0., 0.2, 200, 40);
+    let mut t = Tspace::new(0., 0.2, 200, 10);
     let save_step: usize = 1;
     t.save_grid(format!("{out_prefix}/time_evol/t.npy").as_str())
         .unwrap();
@@ -36,7 +36,7 @@ fn main() {
     let psi_path = "/home/denis/disk_storage/DATA/br/br2e1d_N120_dx05_interact.hdf5";
     let mut psi = WaveFunction2D::init_from_hdf5(psi_path);
     // расширяем сетку
-    let x = Xspace2D::new([-100.0, -100.0], [0.5, 0.5], [2000, 2000]);
+    let x = Xspace2D::new([-100.0, -100.0], [0.5, 0.5], [500, 500]);
     psi.extend(&x);
     psi.normalization_by_1();
     psi.plot_log(format!("{out_prefix}/psi_init.png").as_str(), [1e-8, 1.0]);
@@ -54,10 +54,9 @@ fn main() {
     );
 
     // инициализируем внешнее поле
-    let field = Field2D {
+    let field = UnipolarPulse2e1d {
         amplitude: 0.035,
         omega: 0.0018849555921538759,
-        N: 3.0,
         x_envelop: 1000.0001,
     };
 

@@ -235,14 +235,17 @@ impl WaveFunction<1> for WaveFunction1D {
 
         // Обновляем все поля
         self.psi = psi_new;
-        self.dpsi_dx = Array1::zeros(x_new.n[0]);
+        self.dpsi_dx = Some(Array1::zeros(x_new.n[0]));
         self.x = x_new.clone();
         self.p = Pspace1D::init(x_new);
     }
 
     fn update_derivatives(&mut self) {
-        self.dpsi_dx = self.psi.clone();
-        fft_dpsi_dx(&mut self.dpsi_dx, &self.x, &self.p);
+        self.dpsi_dx = Some(self.psi.clone());
+        if let Some(ref mut dpsi) = self.dpsi_dx {
+            // Разворачиваем Option
+            fft_dpsi_dx(dpsi, &self.x, &self.p);
+        }
     }
 
     fn prob_in_numerical_box(&self) -> F {
@@ -279,14 +282,13 @@ impl WaveFunction<1> for WaveFunction1D {
     }
 
     fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
-        let dpsi_dx: Array1<C> = Array::zeros(x.n[0]);
         let reader = File::open(psi_path).unwrap();
         let p = Pspace1D::init(&x);
         Self {
             psi: Array::<C, Ix1>::read_npy(reader).unwrap(),
             x,
             p,
-            dpsi_dx,
+            dpsi_dx: None,
         }
     }
 
@@ -307,12 +309,11 @@ impl WaveFunction<1> for WaveFunction1D {
         };
 
         let p = Pspace1D::init(&xspace);
-        let dpsi_dx: Array1<C> = Array::zeros(xspace.n[0]);
         Self {
             psi,
             x: xspace,
             p,
-            dpsi_dx,
+            dpsi_dx: None,
         }
     }
 }

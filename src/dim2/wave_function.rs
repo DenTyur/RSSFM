@@ -226,17 +226,21 @@ impl WaveFunction<2> for WaveFunction2D {
 
         // Обновляем все поля
         self.psi = psi_new;
-        self.dpsi_dx = Array2::zeros((x_new.n[0], x_new.n[1]));
-        self.dpsi_dy = Array2::zeros((x_new.n[0], x_new.n[1]));
+        self.dpsi_dx = Some(Array2::zeros((x_new.n[0], x_new.n[1])));
+        self.dpsi_dy = Some(Array2::zeros((x_new.n[0], x_new.n[1])));
         self.x = x_new.clone();
         self.p = Pspace2D::init(x_new);
     }
 
     fn update_derivatives(&mut self) {
-        self.dpsi_dx = self.psi.clone();
-        self.dpsi_dy = self.psi.clone();
-        fft_dpsi_dx(&mut self.dpsi_dx, &self.x, &self.p);
-        fft_dpsi_dy(&mut self.dpsi_dy, &self.x, &self.p);
+        self.dpsi_dx = Some(self.psi.clone());
+        self.dpsi_dy = Some(self.psi.clone());
+        if let Some(ref mut dpsix) = self.dpsi_dx {
+            fft_dpsi_dx(dpsix, &self.x, &self.p);
+        }
+        if let Some(ref mut dpsiy) = self.dpsi_dy {
+            fft_dpsi_dy(dpsiy, &self.x, &self.p);
+        }
     }
 
     fn prob_in_numerical_box(&self) -> F {
@@ -273,16 +277,14 @@ impl WaveFunction<2> for WaveFunction2D {
     }
 
     fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
-        let dpsi_dx: Array2<C> = Array::zeros((x.n[0], x.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((x.n[0], x.n[1]));
         let reader = File::open(psi_path).unwrap();
         let p = Pspace2D::init(&x);
         Self {
             psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
             x,
             p,
-            dpsi_dx,
-            dpsi_dy,
+            dpsi_dx: None,
+            dpsi_dy: None,
         }
     }
 
@@ -307,14 +309,12 @@ impl WaveFunction<2> for WaveFunction2D {
         };
 
         let p = Pspace2D::init(&xspace);
-        let dpsi_dx: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
-        let dpsi_dy: Array2<C> = Array::zeros((xspace.n[0], xspace.n[1]));
         Self {
             psi,
             x: xspace,
             p,
-            dpsi_dx,
-            dpsi_dy,
+            dpsi_dx: None,
+            dpsi_dy: None,
         }
     }
 }
