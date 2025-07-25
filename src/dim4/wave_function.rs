@@ -49,9 +49,9 @@ impl WaveFunction4D {
 
     pub fn init_spectral_derivatives(&mut self) {
         self.dpsi_d0 = Some(self.psi.clone());
-        self.dpsi_d0 = Some(self.psi.clone());
-        self.dpsi_d0 = Some(self.psi.clone());
-        self.dpsi_d0 = Some(self.psi.clone());
+        self.dpsi_d1 = Some(self.psi.clone());
+        self.dpsi_d2 = Some(self.psi.clone());
+        self.dpsi_d3 = Some(self.psi.clone());
     }
 
     pub fn plot_slice_log(

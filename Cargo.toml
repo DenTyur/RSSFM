@@ -9,6 +9,16 @@ name = "rssfm"
 path = "src/lib.rs"
 
 # ======================== Расчетные бинарники ========================================
+# 3D тестировка
+[[bin]]
+name = "main3d"
+path = "src/out/dim3/main3d.rs"
+
+# 2D тестировка
+[[bin]]
+name = "main2d"
+path = "src/out/dim2/main2d.rs"
+
 # br circular polarization + tsurff
 [[bin]]
 name = "br_2d_external"

@@ -13,6 +13,8 @@ pub mod dim2;
 // #[cfg(feature = "dim2")]
 // pub use dim2::*;
 
+pub mod dim3;
+
 // #[cfg(feature = "dim4")]
 pub mod dim4;
 // #[cfg(feature = "dim4")]

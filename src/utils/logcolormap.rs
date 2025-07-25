@@ -17,7 +17,16 @@ pub fn plot_heatmap_logscale(
     );
 
     // Создание области для рисования
-    let root = BitMapBackend::new(output_path, (810, 800)).into_drawing_area();
+    // let maxaxlen = x.len().max(y.len()) as f32;
+    let root = BitMapBackend::new(
+        output_path,
+        (810, 800),
+        // (
+        // (810. * x.len() as f32 / maxaxlen).round() as u32,
+        // (800. * y.len() as f32 / maxaxlen).round() as u32,
+        // ),
+    )
+    .into_drawing_area();
     root.fill(&WHITE)?;
 
     // Определение пределов осей

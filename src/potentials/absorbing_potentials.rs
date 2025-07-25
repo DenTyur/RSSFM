@@ -82,6 +82,61 @@ pub fn absorbing_potential_2d_asim(
     potential
 }
 
+/// 3D асимметричный
+pub fn absorbing_potential_3d_asim(
+    point: [F; 3],       // Точка в 3D пространстве [x, y, z]
+    bounds: [[F; 2]; 3], // Границы области [[x_min, x_max], [y_min, y_max], [z_min, z_max]]
+    alpha: F,            // Параметр поглощения
+) -> C {
+    let x = point[0];
+    let y = point[1];
+    let z = point[2];
+
+    let x_min = bounds[0][0];
+    let x_max = bounds[0][1];
+    let y_min = bounds[1][0];
+    let y_max = bounds[1][1];
+    let z_min = bounds[2][0];
+    let z_max = bounds[2][1];
+
+    let mut potential = C::new(0.0, 0.0);
+
+    // Левая граница по x (x < x_min)
+    if x < x_min {
+        let dist = x_min - x;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+    // Правая граница по x (x > x_max)
+    else if x > x_max {
+        let dist = x - x_max;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+
+    // Нижняя граница по y (y < y_min)
+    if y < y_min {
+        let dist = y_min - y;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+    // Верхняя граница по y (y > y_max)
+    else if y > y_max {
+        let dist = y - y_max;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+
+    // Нижняя граница по z (z < z_min)
+    if z < z_min {
+        let dist = z_min - z;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+    // Верхняя граница по z (z > z_max)
+    else if z > z_max {
+        let dist = z - z_max;
+        potential -= I * dist * alpha * (1.0 - (-0.5 * dist).exp());
+    }
+
+    potential
+}
+
 /// 4D
 pub fn absorbing_potential_4d(x: [F; 4], r0: F, alpha: F) -> C {
     // параметры потенциала:
