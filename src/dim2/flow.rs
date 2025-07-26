@@ -89,8 +89,8 @@ impl<'a, Field2D: Field<2>> Flux<2> for VelocityGauge2D<'a, Field2D> {
         let psi1_val = psi1.value(x);
         let psi2_val = psi2.value(x);
 
-        let psi1_derivs = psi1.deriv(x);
-        let psi2_derivs = psi2.deriv(x);
+        let psi1_derivs = [psi1.deriv(x, 0), psi1.deriv(x, 1)];
+        let psi2_derivs = [psi2.deriv(x, 0), psi2.deriv(x, 1)];
 
         let j0 = psi1_val.conj() * vec_pot[0] * psi2_val
             + I / 2.0 * (psi2_val * psi1_derivs[0].conj() - psi1_val.conj() * psi2_derivs[0]);

@@ -54,12 +54,14 @@ impl<'a, G: VolkovGauge> Volkov2D<'a, G> {
 
 /// Значение Волковской функции в точке и производная в точке
 impl<'a, G: VolkovGauge> ValueAndSpaceDerivatives<2> for Volkov2D<'a, G> {
-    fn deriv(&self, x: [F; 2]) -> [C; 2] {
+    fn deriv(&self, x: [F; 2], axis: usize) -> C {
+        assert!(axis <= 2, "axis>DIM");
         let deriv_factor = self.gauge.deriv_factor(self.p, self.t);
-        [
-            deriv_factor[0] * self.value(x),
-            deriv_factor[1] * self.value(x),
-        ]
+        match axis {
+            0 => deriv_factor[0] * self.value(x),
+            1 => deriv_factor[1] * self.value(x),
+            _ => unreachable!("axis > DIM"),
+        }
     }
 
     fn value(&self, x: [F; 2]) -> C {

@@ -12,9 +12,8 @@ use ndarray_npy::WriteNpyError;
 ///
 /// D задает размерность пространства.
 pub trait ValueAndSpaceDerivatives<const D: usize> {
-    /// Возвращает производную функции в точке по каждой из n
-    /// пространственных осей в виде массива из n элементов
-    fn deriv(&self, x: [F; D]) -> [C; D];
+    /// Возвращает производную функции вдоль оси axis: 0..D в точке x
+    fn deriv(&self, x: [F; D], axis: usize) -> C;
 
     /// Возвращает значение функции в точке
     fn value(&self, x: [F; D]) -> C;

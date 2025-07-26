@@ -136,7 +136,8 @@ impl WaveFunction2D {
 }
 
 impl ValueAndSpaceDerivatives<2> for WaveFunction2D {
-    fn deriv(&self, x: [F; Self::DIM]) -> [C; Self::DIM] {
+    fn deriv(&self, x: [F; Self::DIM], axis: usize) -> C {
+        assert!(axis <= 2, "axis>DIM");
         // нахождение индексов ближайших к окружности узлов сетки
         let x_min = self.x.grid[0][[0]];
         let y_min = self.x.grid[1][[0]];
@@ -146,11 +147,17 @@ impl ValueAndSpaceDerivatives<2> for WaveFunction2D {
         if self.dpsi_dx.is_none() || self.dpsi_dy.is_none() {
             panic!("Derivatives are required but not available");
         }
-
-        [
-            self.dpsi_dx.as_ref().unwrap()[(ix, iy)],
-            self.dpsi_dy.as_ref().unwrap()[(ix, iy)],
-        ]
+        match axis {
+            0 => self
+                .dpsi_dx
+                .as_ref()
+                .expect("Derivatives are required but not available")[(ix, iy)],
+            1 => self
+                .dpsi_dy
+                .as_ref()
+                .expect("Derivatives are required but not available")[(ix, iy)],
+            _ => unreachable!("axis > DIM"),
+        }
     }
 
     fn value(&self, x: [F; Self::DIM]) -> C {
