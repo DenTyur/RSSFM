@@ -1,6 +1,6 @@
+use crate::common::particle::Particle;
 use crate::common::tspace::Tspace;
 use crate::config::{C, F};
-use crate::dim2::ssfm::Particle;
 
 /// Трейт для операторов эволюции для SSFM в разных калибровках для одной частицы
 pub trait GaugedEvolutionSSFM<const D: usize> {

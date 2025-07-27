@@ -26,7 +26,7 @@ impl<'a, Field4D: Field<4>> VelocityGauge4D<'a, Field4D> {
 }
 
 //=====================================SSFM========================================
-/// Эволюция для SSFM в калибровке скорости для двух четырехмерных частиц Поле 2D
+/// Эволюция для SSFM в калибровке скорости для двух двумерных частиц Поле 2D
 impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for VelocityGauge2D<'a, Field2D> {
     type WF = WaveFunction4D;
 
@@ -103,8 +103,10 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for VelocityGauge2D<'a, Field
     }
 
     fn p_evol(&self, particles: &[Particle], wf: &mut WaveFunction4D, tcurrent: F, dt: F) {
-        let m = particles[0].mass;
-        let q = particles[0].charge;
+        let m0 = particles[0].mass;
+        let q0 = particles[0].charge;
+        let m1 = particles[1].mass;
+        let q1 = particles[1].charge;
         let vec_pot = self.field.vector_potential(tcurrent);
 
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
@@ -118,14 +120,14 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for VelocityGauge2D<'a, Field
                                     |(psi_elem, p3)| {
                                         *psi_elem *= (-I
                                             * dt
-                                            * (0.5 / m * p0 * p0
-                                                + 0.5 / m * p1 * p1
-                                                + 0.5 / m * p2 * p2
-                                                + 0.5 / m * p3 * p3
-                                                + q / m * vec_pot[0] * p0
-                                                + q / m * vec_pot[1] * p1
-                                                + q / m * vec_pot[2] * p2
-                                                + q / m * vec_pot[3] * p3))
+                                            * (0.5 / m0 * p0 * p0
+                                                + 0.5 / m0 * p1 * p1
+                                                + 0.5 / m1 * p2 * p2
+                                                + 0.5 / m1 * p3 * p3
+                                                + q0 / m0 * vec_pot[0] * p0
+                                                + q0 / m0 * vec_pot[1] * p1
+                                                + q1 / m1 * vec_pot[0] * p2
+                                                + q1 / m1 * vec_pot[1] * p3))
                                             .exp();
                                     },
                                 );
@@ -275,8 +277,8 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for LenthGauge2D<'a, Field2D>
                                                 + 0.5 / m1 * p3 * p3
                                                 + q0 / m0 * vec_pot[0] * p0
                                                 + q0 / m0 * vec_pot[1] * p1
-                                                + q1 / m1 * vec_pot[2] * p2
-                                                + q1 / m1 * vec_pot[3] * p3))
+                                                + q1 / m1 * vec_pot[0] * p2
+                                                + q1 / m1 * vec_pot[1] * p3))
                                             .exp();
                                     },
                                 );
