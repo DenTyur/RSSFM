@@ -176,7 +176,7 @@ impl WaveFunction3D {
 }
 
 impl ValueAndSpaceDerivatives<3> for WaveFunction3D {
-    fn deriv(&self, x: [F; Self::DIM]) -> [C; Self::DIM] {
+    fn deriv(&self, x: [F; Self::DIM], axis: usize) -> C {
         // unimplemented!("This method is not implemented yet");
         // нахождение индексов ближайших к окружности узлов сетки
         let x0_min = self.x.grid[0][[0]];
@@ -190,11 +190,21 @@ impl ValueAndSpaceDerivatives<3> for WaveFunction3D {
             panic!("Derivatives are required but not available");
         }
 
-        [
-            self.dpsi_d0.as_ref().unwrap()[(ix0, ix1, ix2)],
-            self.dpsi_d1.as_ref().unwrap()[(ix0, ix1, ix2)],
-            self.dpsi_d2.as_ref().unwrap()[(ix0, ix1, ix2)],
-        ]
+        match axis {
+            0 => self
+                .dpsi_d0
+                .as_ref()
+                .expect("Derivatives are required but not available")[(ix0, ix1, ix2)],
+            1 => self
+                .dpsi_d1
+                .as_ref()
+                .expect("Derivatives are required but not available")[(ix0, ix1, ix2)],
+            2 => self
+                .dpsi_d2
+                .as_ref()
+                .expect("Derivatives are required but not available")[(ix0, ix1, ix2)],
+            _ => panic!("deriv 3d: axis>2 !"),
+        }
     }
 
     fn value(&self, x: [F; Self::DIM]) -> C {

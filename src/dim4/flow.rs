@@ -1,7 +1,9 @@
 use crate::config::{C, F, I};
-use crate::dim4::{gauge::VelocityGauge4D, space::Xspace4D};
+use crate::dim2::gauge::VelocityGauge2D;
+use crate::dim4::space::Xspace4D;
 use crate::macros::check_path;
 use crate::traits::{
+    field::Field,
     flow::{Flux, SurfaceFlow},
     wave_function::ValueAndSpaceDerivatives,
 };
@@ -147,7 +149,7 @@ impl<'a, G: Flux<4> + Send + Sync> SurfaceFlow<4, G> for Hypercube<'a> {
 //                 Плотность потока и калибровка
 //============================================================================
 /// Плотность потока вероятности в калибровке скорости
-impl<'a> Flux<4> for VelocityGauge4D<'a> {
+impl<'a, Field2D: Field<2>> Flux<4> for VelocityGauge2D<'a, Field2D> {
     fn compute_flux(
         &self,
         x: [F; 4],
@@ -155,13 +157,23 @@ impl<'a> Flux<4> for VelocityGauge4D<'a> {
         psi2: &(impl ValueAndSpaceDerivatives<4> + Send + Sync),
         t: F,
     ) -> [C; 4] {
-        let vec_pot = self.field.vec_pot(t); // векторный потенциал
+        let vec_pot = self.field.vector_potential(t); // векторный потенциал
 
         let psi1_val = psi1.value(x);
         let psi2_val = psi2.value(x);
 
-        let psi1_derivs = psi1.deriv(x);
-        let psi2_derivs = psi2.deriv(x);
+        let psi1_derivs = [
+            psi1.deriv(x, 0),
+            psi1.deriv(x, 1),
+            psi1.deriv(x, 2),
+            psi1.deriv(x, 3),
+        ];
+        let psi2_derivs = [
+            psi2.deriv(x, 0),
+            psi2.deriv(x, 1),
+            psi2.deriv(x, 2),
+            psi2.deriv(x, 3),
+        ];
 
         let zero_c = C::new(0.0, 0.0);
         let mut j: [C; 4] = [zero_c, zero_c, zero_c, zero_c];

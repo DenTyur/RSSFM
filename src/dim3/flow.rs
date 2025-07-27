@@ -125,8 +125,8 @@ impl<'a, Field3D: Field<3>> Flux<3> for VelocityGauge3D<'a, Field3D> {
         let psi1_val = psi1.value(x);
         let psi2_val = psi2.value(x);
 
-        let psi1_derivs = psi1.deriv(x);
-        let psi2_derivs = psi2.deriv(x);
+        let psi1_derivs = [psi1.deriv(x, 0), psi1.deriv(x, 1)];
+        let psi2_derivs = [psi2.deriv(x, 0), psi2.deriv(x, 1)];
 
         let zero_c = C::new(0.0, 0.0);
         let mut j: [C; 3] = [zero_c, zero_c, zero_c];

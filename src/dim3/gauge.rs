@@ -1,4 +1,5 @@
 use super::wave_function::WaveFunction3D;
+use crate::common::particle::Particle;
 use crate::config::{C, F, I};
 use crate::traits::{field::Field, ssfm::GaugedEvolutionSSFM};
 use itertools::multizip;
@@ -29,6 +30,7 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
 
     fn x_evol_half(
         &self,
+        _particles: &[Particle],
         wf: &mut WaveFunction3D,
         _tcurrent: F,
         dt: F,
@@ -57,6 +59,7 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
 
     fn x_evol(
         &self,
+        _particles: &[Particle],
         wf: &mut WaveFunction3D,
         _tcurrent: F,
         dt: F,
@@ -82,7 +85,9 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
             });
     }
 
-    fn p_evol(&self, wf: &mut WaveFunction3D, tcurrent: F, dt: F) {
+    fn p_evol(&self, particles: &[Particle], wf: &mut WaveFunction3D, tcurrent: F, dt: F) {
+        let m = particles[0].mass;
+        let q = particles[0].charge;
         let vec_pot = self.field.vector_potential(tcurrent);
 
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
@@ -94,12 +99,12 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
                             |(psi_elem, p2)| {
                                 *psi_elem *= (-I
                                     * dt
-                                    * (0.5 * p0 * p0
-                                        + 0.5 * p1 * p1
-                                        + 0.5 * p2 * p2
-                                        + vec_pot[0] * p0
-                                        + vec_pot[1] * p1
-                                        + vec_pot[2] * p2))
+                                    * (0.5 / m * p0 * p0
+                                        + 0.5 / m * p1 * p1
+                                        + 0.5 / m * p2 * p2
+                                        + q / m * vec_pot[0] * p0
+                                        + q / m * vec_pot[1] * p1
+                                        + q / m * vec_pot[2] * p2))
                                     .exp();
                             },
                         );
@@ -130,6 +135,7 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
 
     fn x_evol_half(
         &self,
+        particles: &[Particle],
         wf: &mut WaveFunction3D,
         tcurrent: F,
         dt: F,
@@ -146,14 +152,17 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
                                 let potential_elem = potential([*x0_point, *x1_point, *x2_point]);
                                 let absorbing_potential_elem =
                                     absorbing_potential([*x0_point, *x1_point, *x2_point]);
-                                let scalar_potential_elem = self
-                                    .field
-                                    .scalar_potential([*x0_point, *x1_point, *x2_point], tcurrent);
+                                let scalar_potential_energy_elem = particles[0].charge
+                                    * self.field.scalar_potential(
+                                        [*x0_point, *x1_point, *x2_point],
+                                        tcurrent,
+                                    );
                                 *psi_elem *= (-I
                                     * 0.5
                                     * dt
-                                    * (potential_elem + absorbing_potential_elem
-                                        - scalar_potential_elem))
+                                    * (potential_elem
+                                        + absorbing_potential_elem
+                                        + scalar_potential_energy_elem))
                                     .exp();
                             },
                         );
@@ -164,6 +173,7 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
 
     fn x_evol(
         &self,
+        particles: &[Particle],
         wf: &mut WaveFunction3D,
         tcurrent: F,
         dt: F,
@@ -180,13 +190,16 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
                                 let potential_elem = potential([*x0_point, *x1_point, *x2_point]);
                                 let absorbing_potential_elem =
                                     absorbing_potential([*x0_point, *x1_point, *x2_point]);
-                                let scalar_potential_elem = self
-                                    .field
-                                    .scalar_potential([*x0_point, *x1_point, *x2_point], tcurrent);
+                                let scalar_potential_energy_elem = particles[0].charge
+                                    * self.field.scalar_potential(
+                                        [*x0_point, *x1_point, *x2_point],
+                                        tcurrent,
+                                    );
                                 *psi_elem *= (-I
                                     * dt
-                                    * (potential_elem + absorbing_potential_elem
-                                        - scalar_potential_elem))
+                                    * (potential_elem
+                                        + absorbing_potential_elem
+                                        + scalar_potential_energy_elem))
                                     .exp();
                             },
                         );
@@ -195,7 +208,8 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
             });
     }
 
-    fn p_evol(&self, wf: &mut WaveFunction3D, tcurrent: F, dt: F) {
+    fn p_evol(&self, particles: &[Particle], wf: &mut WaveFunction3D, tcurrent: F, dt: F) {
+        let m = particles[0].mass;
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
             .par_bridge()
             .for_each(|(mut psi_2d, p0)| {
@@ -203,9 +217,10 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
                     |(mut psi_1d, p1)| {
                         multizip((psi_1d.iter_mut(), wf.p.grid[2].iter())).for_each(
                             |(psi_elem, p2)| {
-                                *psi_elem *=
-                                    (-I * dt * (0.5 * p0 * p0 + 0.5 * p1 * p1 + 0.5 * p2 * p2))
-                                        .exp();
+                                *psi_elem *= (-I
+                                    * dt
+                                    * (0.5 / m * p0 * p0 + 0.5 / m * p1 * p1 + 0.5 / m * p2 * p2))
+                                    .exp();
                             },
                         );
                     },

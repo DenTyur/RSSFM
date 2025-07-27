@@ -7,6 +7,8 @@ use crate::config::F;
 /// Или пиши unimplemented!
 /// Таким образом будет задаваться калибровка поля.
 pub trait Field<const D: usize>: Sync + Send {
+    const DIM: usize = D;
+
     /// Скалярный потенциал поля в точке x в момент t
     fn scalar_potential(&self, x: [F; D], t: F) -> F;
 
