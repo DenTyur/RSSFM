@@ -1,5 +1,8 @@
 use crate::config::{C, F, I};
-use crate::dim3::{gauge::VelocityGauge3D, space::Xspace3D};
+use crate::dim3::{
+    gauge::{LenthGauge3D, VelocityGauge3D},
+    space::Xspace3D,
+};
 use crate::macros::check_path;
 use crate::traits::{
     field::Field,
@@ -11,6 +14,60 @@ use std::marker::{Send, Sync};
 //============================================================================
 //                 Поверхность и поток через нее
 //============================================================================
+
+/// Плоскость z=border. Поверхность, через которую считается поток.
+pub struct Zplane<'a> {
+    pub border: F,
+    x: &'a Xspace3D,
+}
+
+impl<'a> Zplane<'a> {
+    pub fn new(border: F, x: &'a Xspace3D) -> Self {
+        Self { border, x }
+    }
+}
+
+impl<'a, G: Flux<3> + Send + Sync> SurfaceFlow<3, G> for Zplane<'a> {
+    fn compute_surface_flow(
+        &self,
+        gauge: &G,
+        psi1: &(impl ValueAndSpaceDerivatives<3> + Send + Sync),
+        psi2: &(impl ValueAndSpaceDerivatives<3> + Send + Sync),
+        t: F,
+    ) -> C {
+        // сейчас считаем, что сетки по всем осям разные
+        let ind_xmin: usize = 0;
+        let ind_xmax: usize = self.x.n[0];
+
+        let ind_ymin: usize = 0;
+        let ind_ymax: usize = self.x.n[1];
+
+        let zmin = self.x.grid[2][[0]];
+        let dz = self.x.dx[2];
+        let dsz = self.x.dx[0] * self.x.dx[1];
+        let ind_zborder = ((self.border - zmin) / dz).round() as usize;
+
+        let compute_z_flow = |ind_border: usize, normale: [F; 3]| {
+            let mut sum: C = C::new(0.0, 0.0);
+            for ix in ind_xmin..ind_xmax {
+                for iy in ind_ymin..ind_ymax {
+                    let x_point = self.x.grid[0][[ix]];
+                    let y_point = self.x.grid[1][[iy]];
+                    let z_point = self.x.grid[2][[ind_border]];
+                    let point = [x_point, y_point, z_point];
+                    let j_flux = gauge.compute_flux(point, psi1, psi2, t);
+                    sum += j_flux[0] * normale[0] + j_flux[1] * normale[1] + j_flux[2] * normale[2];
+                }
+            }
+            sum * dsz
+        };
+
+        // Суммируем поток через все границы
+        let z_right_flow: C = compute_z_flow(ind_zborder, [0.0, 0.0, 1.0]);
+
+        z_right_flow
+    }
+}
 
 /// Квадрат. Поверхность, через которую считается поток.
 pub struct Cube<'a> {
@@ -111,6 +168,31 @@ impl<'a, G: Flux<3> + Send + Sync> SurfaceFlow<3, G> for Cube<'a> {
 //============================================================================
 //                 Плотность потока и калибровка
 //============================================================================
+/// Плотность потока вероятности в калибровке длины
+impl<'a, Field3D: Field<3>> Flux<3> for LenthGauge3D<'a, Field3D> {
+    fn compute_flux(
+        &self,
+        x: [F; 3],
+        psi1: &(impl ValueAndSpaceDerivatives<3> + Send + Sync),
+        psi2: &(impl ValueAndSpaceDerivatives<3> + Send + Sync),
+        _t: F,
+    ) -> [C; 3] {
+        let psi1_val = psi1.value(x);
+        let psi2_val = psi2.value(x);
+
+        let psi1_derivs = [psi1.deriv(x, 0), psi1.deriv(x, 1), psi1.deriv(x, 2)];
+        let psi2_derivs = [psi2.deriv(x, 0), psi2.deriv(x, 1), psi2.deriv(x, 2)];
+
+        let zero_c = C::new(0.0, 0.0);
+        let mut j: [C; 3] = [zero_c, zero_c, zero_c];
+
+        for (i, j_elem) in j.iter_mut().enumerate() {
+            *j_elem =
+                I / 2.0 * (psi2_val * psi1_derivs[i].conj() - psi1_val.conj() * psi2_derivs[i]);
+        }
+        j
+    }
+}
 /// Плотность потока вероятности в калибровке скорости
 impl<'a, Field3D: Field<3>> Flux<3> for VelocityGauge3D<'a, Field3D> {
     fn compute_flux(
@@ -125,8 +207,8 @@ impl<'a, Field3D: Field<3>> Flux<3> for VelocityGauge3D<'a, Field3D> {
         let psi1_val = psi1.value(x);
         let psi2_val = psi2.value(x);
 
-        let psi1_derivs = [psi1.deriv(x, 0), psi1.deriv(x, 1)];
-        let psi2_derivs = [psi2.deriv(x, 0), psi2.deriv(x, 1)];
+        let psi1_derivs = [psi1.deriv(x, 0), psi1.deriv(x, 1), psi1.deriv(x, 2)];
+        let psi2_derivs = [psi2.deriv(x, 0), psi2.deriv(x, 1), psi2.deriv(x, 2)];
 
         let zero_c = C::new(0.0, 0.0);
         let mut j: [C; 3] = [zero_c, zero_c, zero_c];

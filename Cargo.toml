@@ -14,6 +14,16 @@ path = "src/lib.rs"
 name = "main3d"
 path = "src/out/dim3/main3d.rs"
 
+# 3D основное состояние
+[[bin]]
+name = "init_state3d"
+path = "src/out/dim3/init_state/init_state3d.rs"
+
+# 3D ионизация
+[[bin]]
+name = "ioniz_1e3d"
+path = "src/out/dim3/ioniz_1e3d/ioniz_1e3d.rs"
+
 # 2D тестировка
 [[bin]]
 name = "main2d"

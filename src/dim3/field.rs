@@ -1,9 +1,11 @@
 use crate::config::{F, PI};
 use crate::traits::field::Field;
+use std::marker::Copy;
 
 /// 1e3d unipolar
 /// Струкрура задающая униполярное поле вдоль оси z в 3D пространстве.
 /// Один трехмерный электрон.
+#[derive(Debug, Clone, Copy)]
 pub struct UnipolarPulse1e3d {
     pub amplitude: F,
     pub omega: F,
