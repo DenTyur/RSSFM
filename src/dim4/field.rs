@@ -1,5 +1,8 @@
 use crate::config::{F, PI};
+use crate::traits::field::Field;
+use std::marker::Copy;
 
+#[derive(Debug, Clone, Copy)]
 pub struct Field4D {
     pub amplitude: F,
     pub omega: F,

@@ -18,16 +18,16 @@ pub fn plot_heatmap_logscale(
 
     // Создание области для рисования
     // let maxaxlen = x.len().max(y.len()) as f32;
-    let root = BitMapBackend::new(
-        output_path,
-        (810, 800),
-        // (
-        // (810. * x.len() as f32 / maxaxlen).round() as u32,
-        // (800. * y.len() as f32 / maxaxlen).round() as u32,
-        // ),
-    )
-    .into_drawing_area();
-    root.fill(&WHITE)?;
+    // let root = BitMapBackend::new(
+    //     output_path,
+    //     (810, 800),
+    // (
+    // (810. * x.len() as f32 / maxaxlen).round() as u32,
+    // (800. * y.len() as f32 / maxaxlen).round() as u32,
+    // ),
+    // )
+    // .into_drawing_area();
+    // root.fill(&WHITE)?;
 
     // Определение пределов осей
     let x_min = x.iter().cloned().fold(F::INFINITY, F::min);
@@ -35,8 +35,31 @@ pub fn plot_heatmap_logscale(
     let y_min = y.iter().cloned().fold(F::INFINITY, F::min);
     let y_max = y.iter().cloned().fold(F::NEG_INFINITY, F::max);
 
+    //=========================================================
+    // Вычисляем соотношение сторон
+    let x_range = x_max - x_min;
+    let y_range = y_max - y_min;
+    let aspect_ratio = x_range / y_range;
+
+    // Базовые размеры (можно настроить по вашему вкусу)
+    let base_width = 800.0;
+    let base_height = 800.0;
+
+    // Вычисляем размеры изображения с учетом соотношения сторон
+    let (width, height) = if aspect_ratio > 1.0 {
+        (base_width, base_width / aspect_ratio)
+    } else {
+        (base_height * aspect_ratio, base_height)
+    };
+
+    // Создание области для рисования с правильными размерами
+    let root = BitMapBackend::new(output_path, (width.round() as u32, height.round() as u32))
+        .into_drawing_area();
+    root.fill(&WHITE)?;
+    //=========================================================
     // Создание графика с основным area и area для colorbar
-    let (main_area, colorbar_area) = root.split_horizontally(790);
+    let (main_area, colorbar_area) = root.split_horizontally((width * 0.95).round() as u32);
+    // let (main_area, colorbar_area) = root.split_horizontally(790);
 
     // Основной график
     let colormin = color_limits.0;

@@ -109,6 +109,16 @@ pub fn br_2e1d(x: [F; 2]) -> F {
         + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
 }
 
+/// Отрицательный ион брома. Два одномерных электрона с взаимодействием. Центр масс
+pub fn br_2e1d_com(x: [F; 2]) -> F {
+    let a: F = 1.66;
+    let b: F = 2.6;
+    let r: F = x[0];
+    let R: F = x[1];
+    -1.0 / ((R + r).powi(2) + a.powi(2)).sqrt() - 1.0 / ((R - r).powi(2) + a.powi(2)).sqrt()
+        + 1.0 / (r.powi(2) + b.powi(2)).sqrt()
+}
+
 /// Потенциал отрицательного иона брома. Внешний электрон. Двумерный.
 pub fn br_1e2d_external(x: [F; 2]) -> F {
     // параметры:
@@ -187,6 +197,24 @@ pub fn br_2e2d(x: [F; 4]) -> F {
     let r2_squared: F = x[2].powi(2) + x[3].powi(2);
     let delta_rx: F = x[2] - x[0];
     let delta_ry: F = x[3] - x[1];
+
+    -1.0 / (r1_squared + a * a).sqrt() - 1.0 / (r2_squared + a * a).sqrt()
+        + 1.0 / (delta_rx * delta_rx + delta_ry * delta_ry + b * b).sqrt()
+}
+
+pub fn br_2e2d_com(x: [F; 4]) -> F {
+    // r: 0,1
+    // R: 2,3
+    let r1: [F; 2] = [x[2] + x[0], x[3] + x[1]];
+    let r2: [F; 2] = [x[2] - x[0], x[3] - x[1]];
+    // параметры:
+    let a: F = 1.0;
+    let b: F = 2.2;
+    // реализация:
+    let r1_squared: F = r1[0].powi(2) + r1[1].powi(2);
+    let r2_squared: F = r2[0].powi(2) + r2[1].powi(2);
+    let delta_rx: F = x[0];
+    let delta_ry: F = x[1];
 
     -1.0 / (r1_squared + a * a).sqrt() - 1.0 / (r2_squared + a * a).sqrt()
         + 1.0 / (delta_rx * delta_rx + delta_ry * delta_ry + b * b).sqrt()
