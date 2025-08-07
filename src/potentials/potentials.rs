@@ -115,7 +115,8 @@ pub fn br_2e1d_com(x: [F; 2]) -> F {
     let b: F = 2.6;
     let r: F = x[0];
     let R: F = x[1];
-    -1.0 / ((R + r).powi(2) + a.powi(2)).sqrt() - 1.0 / ((R - r).powi(2) + a.powi(2)).sqrt()
+    -1.0 / ((R + 0.5 * r).powi(2) + a.powi(2)).sqrt()
+        - 1.0 / ((R - 0.5 * r).powi(2) + a.powi(2)).sqrt()
         + 1.0 / (r.powi(2) + b.powi(2)).sqrt()
 }
 
@@ -205,8 +206,8 @@ pub fn br_2e2d(x: [F; 4]) -> F {
 pub fn br_2e2d_com(x: [F; 4]) -> F {
     // r: 0,1
     // R: 2,3
-    let r1: [F; 2] = [x[2] + x[0], x[3] + x[1]];
-    let r2: [F; 2] = [x[2] - x[0], x[3] - x[1]];
+    let r1: [F; 2] = [x[2] + 0.5 * x[0], x[3] + 0.5 * x[1]];
+    let r2: [F; 2] = [x[2] - 0.5 * x[0], x[3] - 0.5 * x[1]];
     // параметры:
     let a: F = 1.0;
     let b: F = 2.2;
