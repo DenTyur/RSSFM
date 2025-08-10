@@ -52,7 +52,7 @@ where
         &mut self,
         wf: &mut WaveFunction3D,
         t: &mut Tspace,
-        psi_p_save_path: Option<&str>,
+        psi_p_save_path: Option<(&str, &str, [F; 2])>,
     ) {
         self.fft_maker.modify_psi(wf);
         self.gauge.x_evol_half(
@@ -83,7 +83,9 @@ where
         self.fft_maker.do_fft(wf);
         self.gauge.p_evol(self.particles, wf, t.current, t.dt);
         if let Some(path) = psi_p_save_path {
-            wf.save_as_npy(path).unwrap();
+            // график волновой функции
+            wf.save_as_npy(path.0).unwrap();
+            // wf.plot_log(path.1, path.2);
         }
         self.fft_maker.do_ifft(wf);
         self.gauge.x_evol_half(

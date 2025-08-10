@@ -1,12 +1,11 @@
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::fft_maker::FftMaker1D;
-use crate::dim2::{
-    space::Xspace2D,
-    wave_function::WaveFunction2D,
-};
+use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
+use crate::macros::check_path;
 use crate::traits::fft_maker::FftMaker;
 use crate::traits::tsurff::Tsurff;
+use crate::utils::hdf5_interface;
 use ndarray::prelude::*;
 use plotters::prelude::*;
 use rayon::prelude::*;
@@ -18,7 +17,7 @@ pub struct TimeFFT {
     ind_point: [usize; 2],
     psi_in_point: Vec<C>,
     pub energy: Array1<F>,
-    psi_fft: Array1<C>,
+    pub psi_fft: Array1<C>,
 }
 
 impl TimeFFT {
@@ -47,6 +46,13 @@ impl TimeFFT {
             psi_fft,
         }
     }
+
+    pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(path, "psi_fft", None, &self.psi_fft);
+        hdf5_interface::write_to_hdf5(path, "energy", None, &self.energy);
+    }
+
     pub fn add_psi_in_point(&mut self, wf: &WaveFunction2D) {
         self.psi_in_point
             .push(wf.psi[(self.ind_point[0], self.ind_point[1])]);

@@ -72,5 +72,10 @@ pub trait SSFM {
     type WF;
 
     /// Эволюция на шаг по времени
-    fn time_step_evol(&mut self, psi: &mut Self::WF, t: &mut Tspace, psi_p_save_path: Option<&str>);
+    fn time_step_evol(
+        &mut self,
+        psi: &mut Self::WF,
+        t: &mut Tspace,
+        psi_p_save_path: Option<(&str, &str, [F; 2])>,
+    );
 }

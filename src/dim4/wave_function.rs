@@ -15,7 +15,9 @@ use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
 use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::BufWriter;
+use std::io::{BufRead, BufReader, Error, Write};
 
 /// Производные не реализованы, потому что для распределения ионов они не нужны.
 /// Если надо будет считать импульсные распределения электронов или плотность потока вероятности, производные понадобятся.
@@ -45,6 +47,27 @@ impl WaveFunction4D {
             x: x.clone(),
             p,
         }
+    }
+
+    // Сохраняет срез волновой функции в файл
+    pub fn save_psi(
+        &self,
+        path: &str,
+        dir_path: &str,
+        slice_step: isize,
+    ) -> Result<(), WriteNpyError> {
+        let mut output = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(String::from(dir_path) + format!("/slice_step.txt").as_str())
+            .unwrap();
+        write!(output, "{:}", slice_step)?;
+        let writer = BufWriter::new(File::create(path)?);
+        self.psi
+            .slice(s![..;slice_step,..;slice_step,..;slice_step,..;slice_step])
+            .write_npy(writer)?;
+        Ok(())
     }
 
     pub fn init_spectral_derivatives(&mut self) {
