@@ -1,10 +1,7 @@
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
 use crate::dim1::fft_maker::FftMaker1D;
-use crate::dim4::{
-    space::Xspace4D,
-    wave_function::WaveFunction4D,
-};
+use crate::dim4::{space::Xspace4D, wave_function::WaveFunction4D};
 use crate::traits::fft_maker::FftMaker;
 use crate::traits::tsurff::Tsurff;
 use ndarray::prelude::*;
@@ -18,7 +15,7 @@ pub struct TimeFFT {
     ind_point: [usize; 4],
     psi_in_point: Vec<C>,
     pub energy: Array1<F>,
-    psi_fft: Array1<C>,
+    pub psi_fft: Array1<C>,
 }
 
 impl TimeFFT {

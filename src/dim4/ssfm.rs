@@ -84,6 +84,7 @@ where
         self.gauge.p_evol(self.particles, wf, t.current, t.dt);
         if let Some(path) = psi_p_save_path {
             wf.save_as_npy(path.0).unwrap();
+            wf.plot_slice_log(path.1, path.2, [None, Some(0.0_f32), None, Some(0.0_f32)]);
         }
         self.fft_maker.do_ifft(wf);
         self.gauge.x_evol_half(
