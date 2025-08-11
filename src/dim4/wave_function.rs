@@ -86,38 +86,49 @@ impl WaveFunction4D {
         fixed_values: [Option<F>; 4], // None означает ось, по которой берется срез
     ) {
         // Преобразуем значения координат в индексы
-        let fixed_indices: [Option<usize>; 4] = fixed_values.map(|val| {
-            val.map(|v| {
-                // Находим индекс для каждой оси
-                self.x
-                    .grid
-                    .iter()
-                    .enumerate()
-                    .find_map(|(axis, grid)| {
-                        if !grid.is_empty() {
-                            let x_min = grid.first().unwrap();
-                            let x_max = grid.last().unwrap();
-
-                            // Проверяем, что значение в пределах сетки
-                            if v < *x_min || v > *x_max {
-                                panic!(
-                                    "Value {} is out of bounds for axis {} (min: {}, max: {})",
-                                    v, axis, x_min, x_max
-                                );
-                            }
-
-                            // Аналитически вычисляем ближайший индекс
-                            let idx = ((v - *x_min) / self.x.dx[axis]).round() as usize;
-
-                            // Обеспечиваем, чтобы индекс был в допустимых пределах
-                            Some(idx.min(grid.len() - 1))
-                        } else {
-                            None
-                        }
-                    })
-                    .expect("Failed to find index")
-            })
-        });
+        // let fixed_indices: [Option<usize>; 4] = fixed_values.map(|val| {
+        //     val.map(|v| {
+        //         // Находим индекс для каждой оси
+        //         self.x
+        //             .grid
+        //             .iter()
+        //             .enumerate()
+        //             .find_map(|(axis, grid)| {
+        //                 if !grid.is_empty() {
+        //                     let x_min = grid[0];
+        //                     let x_max = grid.last().unwrap();
+        //
+        //                     // Проверяем, что значение в пределах сетки
+        //                     if v < x_min || v > *x_max {
+        //                         panic!(
+        //                             "Value {} is out of bounds for axis {} (min: {}, max: {})",
+        //                             v, axis, x_min, x_max
+        //                         );
+        //                     }
+        //
+        //                     // Аналитически вычисляем ближайший индекс
+        //                     dbg!(v);
+        //                     dbg!(x_min);
+        //                     let idx = ((v - x_min) / self.x.dx[axis]).round() as usize;
+        //
+        //                     // Обеспечиваем, чтобы индекс был в допустимых пределах
+        //                     Some(idx.min(grid.len() - 1))
+        //                 } else {
+        //                     None
+        //                 }
+        //             })
+        //             .expect("Failed to find index")
+        //     })
+        // });
+        let mut fixed_indices: [Option<usize>; 4] = [None; 4];
+        for i in 0..4 {
+            if fixed_values[i] != None {
+                let ind =
+                    ((fixed_values[i].unwrap() - self.x.x0[i]) / self.x.dx[i]).round() as usize;
+                fixed_indices[i] = Some(ind);
+            }
+        }
+        dbg!(fixed_indices);
 
         // Определяем, какие оси будут в срезе (те, для которых fixed_indices == None)
         let slice_axes: Vec<usize> = fixed_indices
@@ -383,53 +394,6 @@ impl WaveFunction<4> for WaveFunction4D {
         self.x = x_new.clone();
         self.p = Pspace4D::init(x_new);
     }
-
-    // fn extend(&mut self, x_new: &Xspace4D) {
-    //     for i in 0..4 {
-    //         // Проверяем, что шаги сетки совпадают
-    //         assert!(
-    //             (x_new.dx[i] - self.x.dx[i]).abs() < 1e-10,
-    //             "Шаг x и x_new должен совпадать"
-    //         );
-    //         // Проверяем, что новые оси содержат старые
-    //         assert!(
-    //             x_new.grid[i][0] <= self.x.grid[i][0]
-    //                 && x_new.grid[i][x_new.n[i] - 1] >= self.x.grid[i][self.x.n[i] - 1],
-    //             "x_new должна содержать x"
-    //         );
-    //     }
-    //
-    //     // Создаем новый массив, заполненный нулями
-    //     let mut psi_new: Array4<C> =
-    //         Array4::zeros((x_new.n[0], x_new.n[1], x_new.n[2], x_new.n[3]));
-    //
-    //     // Находим индексы, куда нужно вставить старый массив
-    //     let x0_start = ((self.x.grid[0][0] - x_new.grid[0][0]) / x_new.dx[0]).round() as usize;
-    //     let x0_end = x0_start + self.x.n[0];
-    //
-    //     let x1_start = ((self.x.grid[1][0] - x_new.grid[1][0]) / x_new.dx[1]).round() as usize;
-    //     let x1_end = x1_start + self.x.n[1];
-    //
-    //     let x2_start = ((self.x.grid[2][0] - x_new.grid[2][0]) / x_new.dx[2]).round() as usize;
-    //     let x2_end = x2_start + self.x.n[2];
-    //
-    //     let x3_start = ((self.x.grid[3][0] - x_new.grid[3][0]) / x_new.dx[3]).round() as usize;
-    //     let x3_end = x3_start + self.x.n[3];
-    //
-    //     // Вставляем старые данные в новый массив
-    //     let mut psi_slice = psi_new.slice_mut(s![
-    //         x0_start..x0_end,
-    //         x1_start..x1_end,
-    //         x2_start..x2_end,
-    //         x3_start..x3_end
-    //     ]);
-    //     psi_slice.assign(&self.psi);
-    //
-    //     // Обновляем все поля
-    //     self.psi = psi_new;
-    //     self.x = x_new.clone();
-    //     self.p = Pspace4D::init(x_new);
-    // }
 
     fn update_derivatives(&mut self) {
         // unimplemented!("This method is not implemented yet");
