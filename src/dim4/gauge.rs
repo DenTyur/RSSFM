@@ -258,7 +258,6 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for LenthGauge2D<'a, Field2D>
         let q0 = particles[0].charge;
         let m1 = particles[1].mass;
         let q1 = particles[1].charge;
-        let vec_pot = self.field.vector_potential(tcurrent);
 
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
             .par_bridge()
@@ -274,11 +273,7 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<4> for LenthGauge2D<'a, Field2D>
                                             * (0.5 / m0 * p0 * p0
                                                 + 0.5 / m0 * p1 * p1
                                                 + 0.5 / m1 * p2 * p2
-                                                + 0.5 / m1 * p3 * p3
-                                                + q0 / m0 * vec_pot[0] * p0
-                                                + q0 / m0 * vec_pot[1] * p1
-                                                + q1 / m1 * vec_pot[0] * p2
-                                                + q1 / m1 * vec_pot[1] * p3))
+                                                + 0.5 / m1 * p3 * p3))
                                             .exp();
                                     },
                                 );

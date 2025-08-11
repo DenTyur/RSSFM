@@ -56,6 +56,8 @@ impl WaveFunction4D {
         dir_path: &str,
         slice_step: isize,
     ) -> Result<(), WriteNpyError> {
+        check_path!(path);
+        check_path!(dir_path);
         let mut output = OpenOptions::new()
             .write(true)
             .create(true)
@@ -466,6 +468,7 @@ impl WaveFunction<4> for WaveFunction4D {
     }
 
     fn save_as_npy(&self, path: &str) -> Result<(), WriteNpyError> {
+        check_path!(path);
         let writer = BufWriter::new(File::create(path)?);
         self.psi.write_npy(writer)?;
         Ok(())

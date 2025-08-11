@@ -51,12 +51,10 @@ macro_rules! print_and_log {
 /// Макрос для проверки существования директории и создания ее
 macro_rules! check_path {
     ($path:expr) => {
-        use std::fs;
-        use std::path::Path;
-        let path = Path::new($path);
+        let path = std::path::Path::new($path);
         if let Some(parent) = path.parent() {
             if !parent.exists() {
-                fs::create_dir_all(parent)
+                std::fs::create_dir_all(parent)
                     .expect(&format!("Failed to create directory: {:?}", parent));
             }
         }

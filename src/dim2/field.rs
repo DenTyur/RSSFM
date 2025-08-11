@@ -168,7 +168,7 @@ impl UnipolarPulse1e2d {
 
 impl Field<2> for UnipolarPulse1e2d {
     fn vector_potential(&self, t: F) -> [F; 2] {
-        println!("Векторный потенциал не реализован! Заглушка.");
+        panic!("Векторный потенциал не реализован! Заглушка.");
         let vec_pot: F = 0.0;
         [vec_pot, vec_pot]
     }
