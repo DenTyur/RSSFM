@@ -283,6 +283,15 @@ impl WaveFunction<2> for WaveFunction2D {
         Ok(())
     }
 
+    fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError> {
+        check_path!(path);
+        let writer = BufWriter::new(File::create(path)?);
+        self.psi
+            .slice(s![..;sparse_step, ..;sparse_step])
+            .write_npy(writer)?;
+        Ok(())
+    }
+
     fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
         let reader = File::open(psi_path).unwrap();
         let p = Pspace2D::init(&x);

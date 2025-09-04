@@ -42,6 +42,9 @@ pub trait WaveFunction<const D: usize> {
     /// Сохраняет волновую функцию в файл в формате .npy
     fn save_as_npy(&self, path: &str) -> Result<(), WriteNpyError>;
 
+    /// Сохраняет волновую функцию в файл в формате .npy разрежая ее
+    fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError>;
+
     /// Считывает волновую функцию из .hdf5
     fn init_from_hdf5(psi_path: &str) -> Self;
 
