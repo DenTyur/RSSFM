@@ -128,7 +128,7 @@ impl WaveFunction4D {
                 fixed_indices[i] = Some(ind);
             }
         }
-        dbg!(fixed_indices);
+        // dbg!(fixed_indices);
 
         // Определяем, какие оси будут в срезе (те, для которых fixed_indices == None)
         let slice_axes: Vec<usize> = fixed_indices
@@ -438,12 +438,60 @@ impl WaveFunction<4> for WaveFunction4D {
         Ok(())
     }
 
+    // fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError> {
+    //     check_path!(path);
+    //     let writer = BufWriter::new(File::create(path)?);
+    //     self.psi
+    //         .slice(s![..;sparse_step, ..;sparse_step, ..;sparse_step, ..;sparse_step])
+    //         .write_npy(writer)?;
+    //     Ok(())
+    // }
+
+    /// Saves a sparsed slice of the 4D wave function to an NPY file and stores the sparse step.
     fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError> {
         check_path!(path);
-        let writer = BufWriter::new(File::create(path)?);
+
+        // Extract directory from path, default to current directory if none
+        let dir_path = std::path::Path::new(path)
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| std::path::Path::new(".").to_path_buf());
+
+        // Create path for slice step metadata file
+        let step_file_path = dir_path.join("sparse_step.txt");
+
+        // Save slice step value to metadata file
+        let mut output = OpenOptions::new()
+            .write(true)
+            .create(true)
+            .truncate(true)
+            .open(&step_file_path)
+            .map_err(|e| {
+                WriteNpyError::Io(std::io::Error::new(
+                    std::io::ErrorKind::Other,
+                    format!("Failed to open {}: {}", step_file_path.display(), e),
+                ))
+            })?;
+
+        write!(output, "{}", sparse_step).map_err(|e| {
+            WriteNpyError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to write to {}: {}", step_file_path.display(), e),
+            ))
+        })?;
+
+        // Save sparsed wave function slice to NPY file
+        let writer = BufWriter::new(File::create(path).map_err(|e| {
+            WriteNpyError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create {}: {}", path, e),
+            ))
+        })?);
+
         self.psi
-            .slice(s![..;sparse_step, ..;sparse_step, ..;sparse_step, ..;sparse_step])
+            .slice(s![..;sparse_step,..;sparse_step,..;sparse_step,..;sparse_step])
             .write_npy(writer)?;
+
         Ok(())
     }
 

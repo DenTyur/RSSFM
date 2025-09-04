@@ -52,7 +52,7 @@ where
         &mut self,
         wf: &mut WaveFunction4D,
         t: &mut Tspace,
-        psi_p_save_path: Option<(&str, &str, [F; 2])>,
+        psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
     ) {
         self.fft_maker.modify_psi(wf);
         self.gauge.x_evol_half(
@@ -83,8 +83,8 @@ where
         self.fft_maker.do_fft(wf);
         self.gauge.p_evol(self.particles, wf, t.current, t.dt);
         if let Some(path) = psi_p_save_path {
-            wf.save_as_npy(path.0).unwrap();
-            wf.plot_slice_log(path.1, path.2, [None, Some(0.0_f32), None, Some(0.0_f32)]);
+            wf.save_sparsed_as_npy(path.0, path.1).unwrap();
+            wf.plot_slice_log(path.2, path.3, [None, Some(0.0_f32), None, Some(0.0_f32)]);
         }
         self.fft_maker.do_ifft(wf);
         self.gauge.x_evol_half(
