@@ -156,7 +156,7 @@ pub fn absorbing_potential_4d_asim(point: [F; 4], bounds: [[F; 2]; 4], alpha: F)
     let x = point[0];
     let y = point[1];
     let z = point[2];
-    let h = point[2];
+    let h = point[3];
 
     let x_min = bounds[0][0];
     let x_max = bounds[0][1];

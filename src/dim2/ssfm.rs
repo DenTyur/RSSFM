@@ -8,46 +8,6 @@ use crate::traits::fft_maker::FftMaker;
 use crate::traits::ssfm::{GaugedEvolutionSSFM, SSFM};
 use crate::traits::wave_function::WaveFunction;
 
-// pub struct SystemOfParticles2D {
-//     pub number: usize,
-//     pub masses: [F; 2],
-//     pub charges: [F; 2],
-// }
-//
-// impl SystemOfParticles2D {
-//     const DIM: usize = 2;
-//
-//     pub fn new(particles: &[Particle]) -> Self {
-//         // проверяем, влезают ли частицы в размерность
-//         let mut total_dim: usize = 0;
-//         for p in particles {
-//             total_dim += p.dim;
-//         }
-//         assert!(
-//             total_dim <= Self::DIM,
-//             "Суммарная размерность частиц превышает 2"
-//         );
-//         // заполняем массы и заряды
-//         let mut masses: [F; 2] = [0.0; 2];
-//         let mut charges: [F; 2] = [0.0; 2];
-//         match particles.len() {
-//             0 => panic!("SystemOfParticles2D: Нет частиц!"),
-//             // одна двумерная частица
-//             1 => {
-//                 masses = [particles[0].mass; 2];
-//                 charges = [particles[0].charge; 2];
-//             }
-//             // две одномерные частицы
-//             2 => {
-//                 masses = [particles[0].mass, particles[1].mass];
-//                 charges = [particles[0].charge, particles[1].charge];
-//             }
-//             _ => unreachable!("SystemOfParticles2D: перебор в размерности >2 !"),
-//         }
-//         Self { masses, charges }
-//     }
-// }
-
 /// SSFM2D -- для одной двумерной частицы
 pub struct SSFM2D<'a, G>
 where
