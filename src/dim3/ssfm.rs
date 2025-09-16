@@ -52,7 +52,8 @@ where
         &mut self,
         wf: &mut WaveFunction3D,
         t: &mut Tspace,
-        psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
+        // psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
+        momentum_representation_callback: Option<&mut dyn FnMut(&WaveFunction3D, F)>,
     ) {
         self.fft_maker.modify_psi(wf);
         self.gauge.x_evol_half(
@@ -82,11 +83,16 @@ where
 
         self.fft_maker.do_fft(wf);
         self.gauge.p_evol(self.particles, wf, t.current, t.dt);
-        if let Some(path) = psi_p_save_path {
-            // график волновой функции
-            wf.save_sparsed_as_npy(path.0, path.1).unwrap();
-            // wf.plot_log(path.1, path.2);
+
+        // Вызов callback для волновой функцией в импульсном представлении
+        if let Some(callback) = momentum_representation_callback {
+            callback(wf, t.current);
         }
+        // if let Some(path) = psi_p_save_path {
+        //     // график волновой функции
+        //     wf.save_sparsed_as_npy(path.0, path.1).unwrap();
+        //     // wf.plot_log(path.1, path.2);
+        // }
         self.fft_maker.do_ifft(wf);
         self.gauge.x_evol_half(
             self.particles,

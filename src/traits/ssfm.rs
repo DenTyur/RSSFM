@@ -76,6 +76,7 @@ pub trait SSFM {
         &mut self,
         psi: &mut Self::WF,
         t: &mut Tspace,
-        psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
+        // psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
+        momentum_representation_callback: Option<&mut dyn FnMut(&Self::WF, F)>,
     );
 }
