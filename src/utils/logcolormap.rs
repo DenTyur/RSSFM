@@ -72,7 +72,7 @@ pub fn plot_heatmap_logscale(
         .y_label_area_size(30)
         .build_cartesian_2d(x_min..x_max, y_min..y_max)?;
 
-    chart.configure_mesh().x_desc("x").y_desc("y").draw()?;
+    // chart.configure_mesh().x_desc("x").y_desc("y").draw()?;
 
     // Преобразование пределов в логарифмический масштаб
     let log_min = color_limits.0.max(1e-20).ln();

@@ -19,6 +19,13 @@ use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::io::{BufRead, BufReader, Error, Write};
 
+/// Перечисления для указания, вкаком представлении находитсяволновая функция
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum Representation {
+    Position, // координатное представление
+    Momentum, // импульсное представление
+}
+
 /// Производные не реализованы, потому что для распределения ионов они не нужны.
 /// Если надо будет считать импульсные распределения электронов или плотность потока вероятности, производные понадобятся.
 /// Но вычисление производных это увеличение оперативной памяти в 5 раз (можно оптимизировать до 2
@@ -31,6 +38,7 @@ pub struct WaveFunction4D {
     pub dpsi_d3: Option<Array4<C>>,
     pub x: Xspace4D,
     pub p: Pspace4D,
+    pub representation: Representation,
 }
 
 impl WaveFunction4D {
@@ -46,30 +54,8 @@ impl WaveFunction4D {
             dpsi_d3: None,
             x: x.clone(),
             p,
+            representation: Representation::Position,
         }
-    }
-
-    // Сохраняет срез волновой функции в файл
-    pub fn save_psi(
-        &self,
-        path: &str,
-        dir_path: &str,
-        slice_step: isize,
-    ) -> Result<(), WriteNpyError> {
-        check_path!(path);
-        check_path!(dir_path);
-        let mut output = OpenOptions::new()
-            .write(true)
-            .create(true)
-            .truncate(true)
-            .open(String::from(dir_path) + format!("/slice_step.txt").as_str())
-            .unwrap();
-        write!(output, "{:}", slice_step)?;
-        let writer = BufWriter::new(File::create(path)?);
-        self.psi
-            .slice(s![..;slice_step,..;slice_step,..;slice_step,..;slice_step])
-            .write_npy(writer)?;
-        Ok(())
     }
 
     pub fn init_spectral_derivatives(&mut self) {
@@ -78,112 +64,10 @@ impl WaveFunction4D {
         self.dpsi_d2 = Some(self.psi.clone());
         self.dpsi_d3 = Some(self.psi.clone());
     }
+}
 
-    pub fn plot_slice_log(
-        &self,
-        path: &str,
-        colorbar_limits: [F; 2],
-        fixed_values: [Option<F>; 4], // None означает ось, по которой берется срез
-    ) {
-        // Преобразуем значения координат в индексы
-        // let fixed_indices: [Option<usize>; 4] = fixed_values.map(|val| {
-        //     val.map(|v| {
-        //         // Находим индекс для каждой оси
-        //         self.x
-        //             .grid
-        //             .iter()
-        //             .enumerate()
-        //             .find_map(|(axis, grid)| {
-        //                 if !grid.is_empty() {
-        //                     let x_min = grid[0];
-        //                     let x_max = grid.last().unwrap();
-        //
-        //                     // Проверяем, что значение в пределах сетки
-        //                     if v < x_min || v > *x_max {
-        //                         panic!(
-        //                             "Value {} is out of bounds for axis {} (min: {}, max: {})",
-        //                             v, axis, x_min, x_max
-        //                         );
-        //                     }
-        //
-        //                     // Аналитически вычисляем ближайший индекс
-        //                     dbg!(v);
-        //                     dbg!(x_min);
-        //                     let idx = ((v - x_min) / self.x.dx[axis]).round() as usize;
-        //
-        //                     // Обеспечиваем, чтобы индекс был в допустимых пределах
-        //                     Some(idx.min(grid.len() - 1))
-        //                 } else {
-        //                     None
-        //                 }
-        //             })
-        //             .expect("Failed to find index")
-        //     })
-        // });
-        let mut fixed_indices: [Option<usize>; 4] = [None; 4];
-        for i in 0..4 {
-            if fixed_values[i] != None {
-                let ind =
-                    ((fixed_values[i].unwrap() - self.x.x0[i]) / self.x.dx[i]).round() as usize;
-                fixed_indices[i] = Some(ind);
-            }
-        }
-        // dbg!(fixed_indices);
-
-        // Определяем, какие оси будут в срезе (те, для которых fixed_indices == None)
-        let slice_axes: Vec<usize> = fixed_indices
-            .iter()
-            .enumerate()
-            .filter(|(_, &idx)| idx.is_none())
-            .map(|(i, _)| i)
-            .collect();
-
-        // Проверяем, что срез двумерный
-        assert_eq!(slice_axes.len(), 2, "Slice must be 2D");
-
-        // Создаем срез
-        let slice = match fixed_indices {
-            [None, None, Some(z), Some(w)] => s![.., .., z, w],
-            [None, Some(y), None, Some(w)] => s![.., y, .., w],
-            [None, Some(y), Some(z), None] => s![.., y, z, ..],
-            [Some(x), None, None, Some(w)] => s![x, .., .., w],
-            [Some(x), None, Some(z), None] => s![x, .., z, ..],
-            [Some(x), Some(y), None, None] => s![x, y, .., ..],
-            _ => panic!("Invalid slice configuration - exactly two axes must be None"),
-        };
-
-        // Применяем срез к пси-функции
-        let sliced_psi = self.psi.slice(slice);
-
-        // Создаем массив для плотности вероятности
-        let shape: Vec<usize> = slice_axes.iter().map(|&axis| self.x.n[axis]).collect();
-        let mut a: Array2<F> = Array::zeros((shape[0], shape[1]));
-        sliced_psi
-            .axis_iter(Axis(0))
-            .zip(a.axis_iter_mut(Axis(0)))
-            .par_bridge()
-            .for_each(|(psi_row, mut a_row)| {
-                psi_row
-                    .iter()
-                    .zip(a_row.iter_mut())
-                    .for_each(|(psi_elem, a_elem)| {
-                        *a_elem = psi_elem.im.powi(2) + psi_elem.re.powi(2);
-                    })
-            });
-
-        let [colorbar_min, colorbar_max] = colorbar_limits;
-
-        check_path!(path);
-        logcolormap::plot_heatmap_logscale(
-            &a,
-            &self.x.grid[slice_axes[0]],
-            &self.x.grid[slice_axes[1]],
-            (colorbar_min, colorbar_max),
-            path,
-        )
-        .unwrap();
-    }
-
+// Работа с центром масс
+impl WaveFunction4D {
     /// Возвращает волновую функцию центра масс
     /// Для взаимодействующих электронов это не совсем правильно,
     /// так как волновая функци не факторизуется на относительную в.ф.
@@ -264,6 +148,85 @@ impl WaveFunction4D {
             grid: [X_grid, Y_grid],
         };
         WaveFunction2D::new(psi_cm, X_cm)
+    }
+}
+
+/// Графическая обработка
+impl WaveFunction4D {
+    pub fn plot_slice_log(
+        &self,
+        path: &str,
+        colorbar_limits: [F; 2],
+        fixed_values: [Option<F>; 4], // None означает ось, по которой берется срез
+    ) {
+        // Определяем, импульсное представление или координатное
+        let (grid, grid_first_elem, d_grid, grid_n) = match self.representation {
+            Representation::Position => (&self.x.grid, &self.x.x0, &self.x.dx, &self.x.n),
+            Representation::Momentum => (&self.p.grid, &self.p.p0, &self.p.dp, &self.x.n),
+        };
+
+        // Теперь используем переменные дальше в коде
+        let mut fixed_indices: [Option<usize>; 4] = [None; 4];
+        for i in 0..4 {
+            if fixed_values[i] != None {
+                let ind =
+                    ((fixed_values[i].unwrap() - grid_first_elem[i]) / d_grid[i]).round() as usize;
+                fixed_indices[i] = Some(ind);
+            }
+        }
+
+        // Определяем, какие оси будут в срезе (те, для которых fixed_indices == None)
+        let slice_axes: Vec<usize> = fixed_indices
+            .iter()
+            .enumerate()
+            .filter(|(_, &idx)| idx.is_none())
+            .map(|(i, _)| i)
+            .collect();
+
+        // Проверяем, что срез двумерный
+        assert_eq!(slice_axes.len(), 2, "Slice must be 2D");
+
+        // Создаем срез
+        let slice = match fixed_indices {
+            [None, None, Some(z), Some(w)] => s![.., .., z, w],
+            [None, Some(y), None, Some(w)] => s![.., y, .., w],
+            [None, Some(y), Some(z), None] => s![.., y, z, ..],
+            [Some(x), None, None, Some(w)] => s![x, .., .., w],
+            [Some(x), None, Some(z), None] => s![x, .., z, ..],
+            [Some(x), Some(y), None, None] => s![x, y, .., ..],
+            _ => panic!("Invalid slice configuration - exactly two axes must be None"),
+        };
+
+        // Применяем срез к пси-функции
+        let sliced_psi = self.psi.slice(slice);
+
+        // Создаем массив для плотности вероятности
+        let shape: Vec<usize> = slice_axes.iter().map(|&axis| grid_n[axis]).collect();
+        let mut a: Array2<F> = Array::zeros((shape[0], shape[1]));
+        sliced_psi
+            .axis_iter(Axis(0))
+            .zip(a.axis_iter_mut(Axis(0)))
+            .par_bridge()
+            .for_each(|(psi_row, mut a_row)| {
+                psi_row
+                    .iter()
+                    .zip(a_row.iter_mut())
+                    .for_each(|(psi_elem, a_elem)| {
+                        *a_elem = psi_elem.norm_sqr(); //.im.powi(2) + psi_elem.re.powi(2);
+                    })
+            });
+
+        let [colorbar_min, colorbar_max] = colorbar_limits;
+
+        check_path!(path);
+        logcolormap::plot_heatmap_logscale(
+            &a,
+            &grid[slice_axes[0]],
+            &grid[slice_axes[1]],
+            (colorbar_min, colorbar_max),
+            path,
+        )
+        .unwrap();
     }
 }
 
@@ -396,7 +359,6 @@ impl WaveFunction<4> for WaveFunction4D {
     }
 
     fn update_derivatives(&mut self) {
-        // unimplemented!("This method is not implemented yet");
         if self.dpsi_d0.is_none()
             || self.dpsi_d1.is_none()
             || self.dpsi_d2.is_none()
@@ -437,15 +399,6 @@ impl WaveFunction<4> for WaveFunction4D {
         self.psi.write_npy(writer)?;
         Ok(())
     }
-
-    // fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError> {
-    //     check_path!(path);
-    //     let writer = BufWriter::new(File::create(path)?);
-    //     self.psi
-    //         .slice(s![..;sparse_step, ..;sparse_step, ..;sparse_step, ..;sparse_step])
-    //         .write_npy(writer)?;
-    //     Ok(())
-    // }
 
     /// Saves a sparsed slice of the 4D wave function to an NPY file and stores the sparse step.
     fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError> {
@@ -497,7 +450,6 @@ impl WaveFunction<4> for WaveFunction4D {
 
     fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
         let reader = File::open(psi_path).unwrap();
-        // let dpsi_d0: Array4<C> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
         let p = Pspace4D::init(&x);
         Self {
             psi: Array::<C, Ix4>::read_npy(reader).unwrap(),
@@ -507,6 +459,7 @@ impl WaveFunction<4> for WaveFunction4D {
             dpsi_d3: None,
             x,
             p,
+            representation: Representation::Position,
         }
     }
 
@@ -551,6 +504,7 @@ impl WaveFunction<4> for WaveFunction4D {
             dpsi_d1,
             dpsi_d2,
             dpsi_d3,
+            representation: Representation::Position,
         }
     }
 }

@@ -24,7 +24,7 @@ pub trait ValueAndSpaceDerivatives<const D: usize> {
 pub trait WaveFunction<const D: usize> {
     type Xspace;
 
-    /// Расширяет сетку волновой функции нулями
+    /// Расширяет сетку волновой функции нулями или обрезает сетку
     fn extend(&mut self, x_new: &Self::Xspace);
 
     /// Вычисляет и обновляет производные
@@ -46,6 +46,14 @@ pub trait WaveFunction<const D: usize> {
     fn save_sparsed_as_npy(&self, path: &str, sparse_step: isize) -> Result<(), WriteNpyError>;
 
     /// Считывает волновую функцию из .hdf5
+    /// Структура файла .hdf5:
+    /// WaveFunction
+    ///     psi_im
+    ///     psi_re
+    /// Xspace
+    ///     x0
+    ///     x1
+    ///     ...
     fn init_from_hdf5(psi_path: &str) -> Self;
 
     // Считывает волновую функцию из файла .npy
