@@ -53,7 +53,7 @@ where
         wf: &mut WaveFunction1D,
         t: &mut Tspace,
         // psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
-        momentum_representation_callback: Option<&mut dyn FnMut(&WaveFunction1D, F)>,
+        momentum_representation_callback: Option<&mut dyn FnMut(&WaveFunction1D, &Tspace)>,
     ) {
         self.fft_maker.modify_psi(wf);
         self.gauge.x_evol_half(
@@ -86,7 +86,7 @@ where
 
         // Вызов callback для волновой функцией в импульсном представлении
         if let Some(callback) = momentum_representation_callback {
-            callback(wf, t.current);
+            callback(wf, t);
         }
         // if let Some(path) = psi_p_save_path {
         //     // график волновой функции

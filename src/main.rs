@@ -1,16 +1,26 @@
-use rssfm::common::tspace::Tspace;
-use rssfm::config::F;
-use rssfm::dim2::ioniz_prob::IonizProb2D;
+#![allow(dead_code)]
+#![allow(non_snake_case)]
+#![allow(unused_variables)]
+#![allow(unused_imports)]
+use ndarray::prelude::*;
+use rayon::prelude::*;
+use rssfm::common::{particle::Particle, tspace::Tspace};
+use rssfm::config::{C, F, PI};
 use rssfm::dim2::{
-    field::UnipolarPulse2e1d,
+    field::UnipolarPulse1e2d,
     gauge::{LenthGauge2D, VelocityGauge2D},
-    space::Xspace2D,
-    ssfm::SSFM2D,
+};
+use rssfm::dim4::{
+    gauge::{LenthGauge4D, VelocityGauge4D},
+    space::Xspace4D,
+    ssfm::SSFM4D,
     time_fft::TimeFFT,
-    wave_function::WaveFunction2D,
+    wave_function::WaveFunction4D,
 };
 use rssfm::measure_time;
-use rssfm::potentials::absorbing_potentials::absorbing_potential_2d_asim;
+use rssfm::potentials::absorbing_potentials::{
+    absorbing_potential_4d, absorbing_potential_4d_asim,
+};
 use rssfm::potentials::potentials;
 use rssfm::print_and_log;
 use rssfm::traits::{
@@ -20,6 +30,8 @@ use rssfm::traits::{
     tsurff::Tsurff,
     wave_function::WaveFunction,
 };
+use rssfm::utils::plot_log::plot_log;
+use std::array;
 use std::time::Instant;
 
 fn main() {
@@ -27,44 +39,70 @@ fn main() {
     let out_prefix = "./out";
 
     // задаем параметры временной сетки
-    let mut t = Tspace::new(0., 0.2, 200, 10);
-    let save_step: usize = 1;
+    let mut t = Tspace::new(0., 0.2, 10, 45);
     t.save_grid(format!("{out_prefix}/time_evol/t.npy").as_str())
         .unwrap();
 
-    // генерация начальной волновой функции psi
-    let psi_path = "/home/denis/disk_storage/DATA/br/br2e1d_N120_dx05_interact.hdf5";
-    let mut psi = WaveFunction2D::init_from_hdf5(psi_path);
+    // начальная волновая функция
+    let mut psi = WaveFunction4D::init_from_hdf5("br2e2d_N64_dx05_interact.hdf5");
+
     // расширяем сетку
-    let x = Xspace2D::new([-100.0, -100.0], [0.5, 0.5], [500, 500]);
+    let x = Xspace4D::new([-20., -50., -20., -50.], [0.5; 4], [240, 200, 240, 200]);
+    // сохраняем расширенную сетку
+    x.save_as_npy(format!("{out_prefix}/time_evol").as_str())
+        .unwrap();
     psi.extend(&x);
     psi.normalization_by_1();
-    psi.plot_log(format!("{out_prefix}/psi_init.png").as_str(), [1e-8, 1.0]);
-    psi.x.save_as_npy(".");
+
+    // Пользовательская обработка до эволюции
+    initial_processing(&psi, &t, out_prefix);
 
     // атомный и поглощающий потенциалы
-    let abs_pot = |x: [F; 2]| absorbing_potential_2d_asim(x, [[-50.0, 850.0], [-50.0, 850.0]], 0.4);
-    let atomic_pot = |x: [F; 2]| potentials::soft_coulomb_2e1d_interact(x, -1.0, 1.66, 2.6);
-
-    // вероятность двойной ионизации
-    let mut ioniz_prob = IonizProb2D::new(
-        [8.0, 10.0, 20.0, 30.0, 50.0, 100.0],
-        psi.x.clone(),
-        t.grid.clone(),
-    );
+    let absorbing_potential = |x: [F; 4]| {
+        absorbing_potential_4d_asim(
+            x,
+            [[-15., 500.], [-45., 45.], [-15., 500.], [-45., 45.]],
+            0.4,
+        )
+    };
+    let atomic_potential = |x: [F; 4]| potentials::br_2e2d(x);
 
     // инициализируем внешнее поле
-    let field = UnipolarPulse2e1d {
+    const AU_TO_FS: F = 2.418_884_3e-2;
+    let T_fs: F = 2.; //fs
+    let T_au: F = T_fs / AU_TO_FS;
+    let omega: F = PI / T_au;
+    let field = UnipolarPulse1e2d {
         amplitude: 0.035,
-        omega: 0.0018849555921538759,
-        x_envelop: 1000.0001,
+        omega,
+        x_envelop: 50.0001,
     };
-
     // указываем калибровку поля
     let gauge = LenthGauge2D::new(&field);
 
+    // два двумерных электрона
+    let electron1 = Particle {
+        dim: 2,
+        mass: 1.0,
+        charge: -1.0,
+    };
+    let electron2 = electron1;
+    let particles = [electron1, electron2];
+
     // инициализируем структуру для SSFM эволюции (решатель ур. Шредингера)
-    let mut ssfm = SSFM2D::new(&gauge, &psi.x, atomic_pot, abs_pot);
+    let mut ssfm = SSFM4D::new(
+        &particles,
+        &gauge,
+        &psi.x,
+        atomic_potential,
+        absorbing_potential,
+    );
+
+    // временное FFT
+    let min_length_of_axes = psi.x.grid.iter().map(|axis| axis.len()).min().unwrap_or(0);
+    let mut time_fft_arr: Vec<TimeFFT> = (0..min_length_of_axes)
+        .map(|i| TimeFFT::new(t.clone(), [x.grid[0][i], 0.1, 0.1, 0.1], &x))
+        .collect();
 
     // эволюция
     let total_time = Instant::now();
@@ -79,22 +117,23 @@ fn main() {
             psi.prob_in_numerical_box(),
         );
         //============================================================
-        //                       SSFM
+        //              SSFM and processing in real time
         //============================================================
         measure_time!("SSFM", {
-            ssfm.time_step_evol(&mut psi, &mut t, None);
-        });
-        // график волновой функции
-        if save_step == 1 || i % save_step == 0 {
-            psi.plot_log(
-                format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i}.png").as_str(),
-                [1e-8, 1.0],
+            ssfm.time_step_evol(
+                &mut psi,
+                &mut t,
+                Some(&mut |psi, t| momentum_processing(psi, t, i, out_prefix)),
             );
-            //сохранение в.ф.
-            psi.save_as_npy(format!("{out_prefix}/time_evol/psi_x/psi_t_{i}.npy").as_str());
+        });
+        position_processing(&psi, &t, i, out_prefix);
+        // ============================================================
+        //                    Временное FFT
+        // ============================================================
+        // добавляем элемент для временного fft
+        for time_fft in time_fft_arr.iter_mut() {
+            time_fft.add_psi_in_point(&psi);
         }
-        // Ioniz Prob
-        ioniz_prob.add(&psi.psi);
         //============================================================
         print_and_log!(
             "time_step = {:.3}, total_time = {:.3}",
@@ -103,6 +142,116 @@ fn main() {
         )
     }
 
-    ioniz_prob.plot(&t.grid, "ioniz_prob.png");
-    ioniz_prob.save_as_hdf5("ioniz_prob.hdf5");
+    //==========================================================================
+    //=========================== Постобработка ================================
+    //==========================================================================
+    // ------------ FFT Интегрируем по всем точкам -----------------------------
+    let mut energy_spectrum_total: Array1<F> = Array::zeros(t.nt);
+
+    for time_fft in time_fft_arr.iter_mut() {
+        time_fft.compute_spectrum();
+
+        time_fft
+            .psi_fft
+            .iter()
+            .zip(energy_spectrum_total.iter_mut())
+            .par_bridge()
+            .for_each(|(psi_elem, energy_spectrum_elem)| {
+                *energy_spectrum_elem += psi_elem.norm_sqr();
+            });
+    }
+    energy_spectrum_total *= psi.x.dx[0];
+
+    plot_log(
+        time_fft_arr[0].energy.clone(),
+        energy_spectrum_total,
+        "energy [eV]",
+        format!("{out_prefix}/energy_spectrum_total.png").as_str(),
+    );
+    // ------------------------строим временное fft-----------------------------
+    for i in [20, 60, 80, 100, 120, 140, 160, 180] {
+        let xcurrent: F = psi.x.grid[0][i];
+        time_fft_arr[i].compute_spectrum();
+        time_fft_arr[i].plot_log(format!("{out_prefix}/time_fft_x_is{xcurrent}.png").as_str());
+    }
+
+    // строим временное fft
+    // time_fft.compute_spectrum();
+    // time_fft.plot_log("time_fft.png");
+    // println!(
+    //     "energy = {}, {}",
+    //     time_fft.energy[[0]],
+    //     time_fft.energy[[t.nt - 1]]
+    // );
+    // Сохраняем финальную в.ф. в psi_initial
+    // psi.normalization_by_1();
+    // psi.save_as_npy("psi_initial.npy");
+    // psi.x.save_as_npy(".");
+}
+
+fn initial_processing(psi: &WaveFunction4D, t: &Tspace, out_prefix: &str) {
+    // графики начального состояния
+    psi.plot_slice_log(
+        format!("{out_prefix}/psi_init_x2=0_x3=0.png").as_str(),
+        [1e-8, 1.0],
+        [None, None, Some(0.0_f32), Some(0.0_f32)],
+    );
+    psi.plot_slice_log(
+        format!("{out_prefix}/psi_init_x1=0_x2=0.png").as_str(),
+        [1e-8, 1.0],
+        [None, Some(0.0_f32), Some(0.0_f32), None],
+    );
+    psi.plot_slice_log(
+        format!("{out_prefix}/psi_init_x0=0_x3=0.png").as_str(),
+        [1e-8, 1.0],
+        [Some(0.0_f32), None, None, Some(0.0_f32)],
+    );
+    psi.plot_slice_log(
+        format!("{out_prefix}/psi_init_x0=0_x1=0.png").as_str(),
+        [1e-8, 1.0],
+        [Some(0.0_f32), Some(0.0_f32), None, None],
+    );
+}
+
+fn momentum_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_prefix: &str) {
+    let save_step: usize = 1;
+    if save_step == 1 || i_step % save_step == 0 {
+        // график среза py1=py2=0
+        psi.plot_slice_log(
+            format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i_step}.png").as_str(),
+            [1e-8, 1e-6],
+            [None, Some(0.0_f32), None, Some(0.0_f32)],
+        );
+        // сохранение волновой функции в импульсном представлении
+        psi.save_sparsed_as_npy(
+            format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
+            4,
+        )
+        .unwrap();
+
+        // интегрирование по py1py2 с разным вырезом серединки
+        // построение F(px1, px2)
+        // интегрирование по px1px2 с разными вырезами серединки
+        // построение F(py1, py2)
+    }
+}
+
+fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_prefix: &str) {
+    let save_step: usize = 1;
+    if save_step == 1 || i_step % save_step == 0 {
+        // график среза волновой функции
+        psi.plot_slice_log(
+            format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i_step}.png").as_str(),
+            [1e-8, 1e-6],
+            [None, Some(0.0_f32), None, Some(0.0_f32)],
+        );
+        // сохранение волновой функции
+        psi.save_sparsed_as_npy(
+            format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
+            4,
+        )
+        .unwrap();
+        // интегрирование по y1y2 с разным вырезом серединки
+        // построение F(x1, x2)
+    }
 }

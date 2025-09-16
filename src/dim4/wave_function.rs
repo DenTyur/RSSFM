@@ -20,7 +20,7 @@ use std::io::BufWriter;
 use std::io::{BufRead, BufReader, Error, Write};
 
 /// Перечисления для указания, вкаком представлении находитсяволновая функция
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy)]
 pub enum Representation {
     Position, // координатное представление
     Momentum, // импульсное представление
