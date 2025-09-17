@@ -8,6 +8,7 @@ use rssfm::dim2::{
     gauge::{LenthGauge2D, VelocityGauge2D},
 };
 use rssfm::dim4::{
+    fft_maker::FftMaker4D,
     gauge::{LenthGauge4D, VelocityGauge4D},
     probability_density_2d::ProbabilityDensity2D,
     space::Xspace4D,
@@ -21,6 +22,7 @@ use rssfm::potentials::absorbing_potentials::{
 };
 use rssfm::potentials::potentials;
 use rssfm::print_and_log;
+use rssfm::traits::fft_maker::FftMaker;
 use rssfm::traits::{
     flow::{Flux, SurfaceFlow},
     space::Space,
@@ -262,7 +264,7 @@ fn momentum_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
         // .unwrap();
 
         // интегрирование по py1py2 с разным вырезом серединки
-        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
         for cut in cuts {
             let compute_time = Instant::now();
             let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
@@ -301,7 +303,7 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
             [None, Some(0.0_f32), None, Some(0.0_f32)],
         );
         // интегрирование по y1y2 с разным вырезом серединки
-        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
         for cut in cuts {
             let compute_time = Instant::now();
             let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
@@ -324,6 +326,117 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                         .as_str(),
                 );
             });
+        }
+        // =================================================================================
+        //              Импульсное распределение без центра r1 и r2 > 5.0
+        // =================================================================================
+        // Получим импульсное распределение однократной и двойной ионизации
+        // 1. Вырезать серединку (заполнить ее нулями)
+        let threshold: F = 5.0;
+        let mut psi_zeroed = create_zeroed_wavefunction(psi, threshold);
+        // 2. Сохранить обрезку
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        for cut in cuts {
+            let compute_time = Instant::now();
+            let prob_dens =
+                ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
+            print_and_log!(
+                "prob_dens_position -- compute = {:.3}",
+                compute_time.elapsed().as_secs_f32()
+            );
+            measure_time!("prob_dens_position -- plot = ", {
+                prob_dens.plot_log(
+                    format!(
+                        "{out_prefix}/imgs/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.png"
+                    )
+                    .as_str(),
+                    [1e-8, 1e-6],
+                );
+            });
+            measure_time!("prob_dens_position -- save = ", {
+                prob_dens.save_as_hdf5(
+                    format!("{out_prefix}/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.hdf5")
+                        .as_str(),
+                );
+            });
+        }
+        // 3. Сделать прямое преобразование фурье
+        let mut fft_maker = FftMaker4D::new(&psi_zeroed.x.n);
+        fft_maker.modify_psi(&mut psi_zeroed);
+        fft_maker.do_fft(&mut psi_zeroed);
+        // 4. Сохранить в импульсном представлении обрезку
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        for cut in cuts {
+            let compute_time = Instant::now();
+            let prob_dens =
+                ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
+            print_and_log!(
+                "prob_dens_momentum -- compute = {:.3}",
+                compute_time.elapsed().as_secs_f32()
+            );
+            measure_time!("prob_dens_momentum -- plot = ", {
+                prob_dens.plot_log(
+                    format!(
+                        "{out_prefix}/imgs/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.png"
+                    )
+                    .as_str(),
+                    [1e-8, 1e-6],
+                );
+            });
+            measure_time!("prob_dens_momentum -- save = ", {
+                prob_dens.save_as_hdf5(
+                    format!(
+                        "{out_prefix}/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.hdf5"
+                    )
+                    .as_str(),
+                );
+            });
+        }
+
+        // Срезы волновой функции y1y2 при x1=x2=local_max
+    }
+}
+
+pub fn create_zeroed_wavefunction(original: &WaveFunction4D, threshold: F) -> WaveFunction4D {
+    // Полная копия
+    let mut new_wf = WaveFunction4D {
+        psi: original.psi.clone(),
+        dpsi_d0: original.dpsi_d0.clone(),
+        dpsi_d1: original.dpsi_d1.clone(),
+        dpsi_d2: original.dpsi_d2.clone(),
+        dpsi_d3: original.dpsi_d3.clone(),
+        x: original.x.clone(),
+        p: original.p.clone(),
+        representation: original.representation,
+    };
+
+    // Находим граничные индексы для каждой оси
+    let idx_0 = find_boundary_index(&original.x.grid[0], threshold);
+    let idx_1 = find_boundary_index(&original.x.grid[1], threshold);
+    let idx_2 = find_boundary_index(&original.x.grid[2], threshold);
+    let idx_3 = find_boundary_index(&original.x.grid[3], threshold);
+
+    // Зануляем только нужную область
+    zero_region(&mut new_wf.psi, idx_0, idx_1, idx_2, idx_3);
+
+    new_wf
+}
+
+// Находит индекс, до которого нужно занулять
+fn find_boundary_index(grid: &Array1<F>, threshold: F) -> usize {
+    grid.iter()
+        .position(|&x| x >= threshold)
+        .unwrap_or(grid.len())
+}
+
+fn zero_region(array: &mut Array4<C>, idx_0: usize, idx_1: usize, idx_2: usize, idx_3: usize) {
+    for i in 0..idx_0 {
+        for j in 0..idx_1 {
+            for k in 0..idx_2 {
+                for l in 0..idx_3 {
+                    array[[i, j, k, l]] = C::new(0.0, 0.0);
+                }
+            }
         }
     }
 }

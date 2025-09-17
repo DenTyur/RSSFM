@@ -11,3 +11,4 @@ Cargo.lock
 .gitignore
 src/imgs
 src/python/.ipynb_checkpoints
+examples/out
