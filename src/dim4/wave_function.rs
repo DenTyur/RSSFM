@@ -26,6 +26,15 @@ pub enum Representation {
     Momentum, // импульсное представление
 }
 
+impl Representation {
+    pub fn as_str(&self) -> &str {
+        match self {
+            Representation::Position => "Position",
+            Representation::Momentum => "Momentum",
+        }
+    }
+}
+
 /// Производные не реализованы, потому что для распределения ионов они не нужны.
 /// Если надо будет считать импульсные распределения электронов или плотность потока вероятности, производные понадобятся.
 /// Но вычисление производных это увеличение оперативной памяти в 5 раз (можно оптимизировать до 2
@@ -40,6 +49,102 @@ pub struct WaveFunction4D {
     pub p: Pspace4D,
     pub representation: Representation,
 }
+
+// impl WaveFunction4D {
+//     pub fn compute_probability_density_2d(
+//         &self,
+//         axes_inds: [usize; 2],
+//         integrate_axes_inds: [usize; 2],
+//         cut: Option<F>,
+//     ) -> ProbabilityDensity2D {
+//         let axes: [Array1<F>; 2] = match self.representation {
+//             Representation::Position => [
+//                 self.x.grid[axes_inds[0]].clone(),
+//                 self.x.grid[axes_inds[1]].clone(),
+//             ],
+//             Representation::Momentum => [
+//                 self.p.grid[axes_inds[0]].clone(),
+//                 self.p.grid[axes_inds[1]].clone(),
+//             ],
+//         };
+//
+//         let (n0, n1) = (axes[0].len(), axes[1].len());
+//         let mut probability_density = Array2::zeros((n0, n1));
+//
+//         let (d_axis0, d_axis1) = match self.representation {
+//             Representation::Position => (
+//                 self.x.dx[integrate_axes_inds[0]],
+//                 self.x.dx[integrate_axes_inds[1]],
+//             ),
+//             Representation::Momentum => (
+//                 self.p.dp[integrate_axes_inds[0]],
+//                 self.p.dp[integrate_axes_inds[1]],
+//             ),
+//         };
+//         let volume_element = d_axis0 * d_axis1;
+//
+//         let integrated_axes = match self.representation {
+//             Representation::Position => [
+//                 self.x.grid[integrate_axes_inds[0]].clone(),
+//                 self.x.grid[integrate_axes_inds[1]].clone(),
+//             ],
+//             Representation::Momentum => [
+//                 self.p.grid[integrate_axes_inds[0]].clone(),
+//                 self.p.grid[integrate_axes_inds[1]].clone(),
+//             ],
+//         };
+//         let len_integrated_axes = [integrated_axes[0].len(), integrated_axes[1].len()];
+//
+//         // Предварительно вычисляем маску для интегрирования
+//         let mask: Option<Array2<bool>> = cut.map(|cut_value| {
+//             Array2::from_shape_fn(
+//                 (len_integrated_axes[0], len_integrated_axes[1]),
+//                 |(k, l)| {
+//                     let coord1 = integrated_axes[0][k];
+//                     let coord2 = integrated_axes[1][l];
+//                     coord1.abs() > cut_value || coord2.abs() > cut_value
+//                 },
+//             )
+//         });
+//
+//         // Параллельное вычисление с итераторами
+//         probability_density
+//             .axis_iter_mut(Axis(0))
+//             .into_par_iter()
+//             .enumerate()
+//             .for_each(|(i, mut row)| {
+//                 for j in 0..row.len() {
+//                     let slice = match (axes_inds, integrate_axes_inds) {
+//                         ([0, 1], [2, 3]) => self.psi.slice(s![i, j, .., ..]),
+//                         ([0, 2], [1, 3]) => self.psi.slice(s![i, .., j, ..]),
+//                         ([0, 3], [1, 2]) => self.psi.slice(s![i, .., .., j]),
+//                         ([1, 2], [0, 3]) => self.psi.slice(s![.., i, j, ..]),
+//                         ([1, 3], [0, 2]) => self.psi.slice(s![.., i, .., j]),
+//                         ([2, 3], [0, 1]) => self.psi.slice(s![.., .., i, j]),
+//                         _ => panic!("Невозможные оси!"),
+//                     };
+//                     let sum = if let Some(ref mask_arr) = mask {
+//                         slice
+//                             .iter()
+//                             .zip(mask_arr.iter())
+//                             .filter(|(_, &mask_val)| mask_val)
+//                             .map(|(psi_val, _)| psi_val.norm_sqr())
+//                             .sum::<F>()
+//                     } else {
+//                         slice.mapv(|c| c.norm_sqr()).sum()
+//                     };
+//                     row[j] = sum * volume_element;
+//                 }
+//             });
+//
+//         let representation = self.representation;
+//         ProbabilityDensity2D {
+//             probability_density,
+//             axes,
+//             representation,
+//         }
+//     }
+// }
 
 impl WaveFunction4D {
     pub const DIM: usize = 4;

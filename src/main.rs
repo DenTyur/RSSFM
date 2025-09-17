@@ -1,7 +1,4 @@
-#![allow(dead_code)]
-#![allow(non_snake_case)]
-#![allow(unused_variables)]
-#![allow(unused_imports)]
+#![allow(dead_code, non_snake_case, unused_variables, unused_imports)]
 use ndarray::prelude::*;
 use rayon::prelude::*;
 use rssfm::common::{particle::Particle, tspace::Tspace};
@@ -12,6 +9,7 @@ use rssfm::dim2::{
 };
 use rssfm::dim4::{
     gauge::{LenthGauge4D, VelocityGauge4D},
+    probability_density_2d::ProbabilityDensity2D,
     space::Xspace4D,
     ssfm::SSFM4D,
     time_fft::TimeFFT,
@@ -80,7 +78,7 @@ fn main() {
     // указываем калибровку поля
     let gauge = LenthGauge2D::new(&field);
 
-    // два двумерных электрона
+    // задаем частицы: два двумерных электрона
     let electron1 = Particle {
         dim: 2,
         mass: 1.0,
@@ -218,21 +216,44 @@ fn momentum_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
     if save_step == 1 || i_step % save_step == 0 {
         // график среза py1=py2=0
         psi.plot_slice_log(
-            format!("{out_prefix}/imgs/time_evol/psi_x/psi_x_t_{i_step}.png").as_str(),
+            format!("{out_prefix}/imgs/time_evol/psi_p/psi_p_t_{i_step}.png").as_str(),
             [1e-8, 1e-6],
             [None, Some(0.0_f32), None, Some(0.0_f32)],
         );
         // сохранение волновой функции в импульсном представлении
-        psi.save_sparsed_as_npy(
-            format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
-            4,
-        )
-        .unwrap();
+        // psi.save_sparsed_as_npy(
+        //     format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
+        //     4,
+        // )
+        // .unwrap();
 
         // интегрирование по py1py2 с разным вырезом серединки
-        // построение F(px1, px2)
-        // интегрирование по px1px2 с разными вырезами серединки
-        // построение F(py1, py2)
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        for cut in cuts {
+            let compute_time = Instant::now();
+            let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
+            print_and_log!(
+                "prob_dense_momentum -- compute = {:.3}",
+                compute_time.elapsed().as_secs_f32()
+            );
+            measure_time!("prob_dens_momentum -- plot = ", {
+                prob_dens.plot_log(
+                    format!(
+                        "{out_prefix}/imgs/time_evol/psi_p/prob_dense_cut{cut}/px1px2_{i_step}.png"
+                    )
+                    .as_str(),
+                    [1e-8, 1e-6],
+                );
+            });
+            measure_time!("prob_dens_momentum -- save = ", {
+                prob_dens.save_as_hdf5(
+                    format!(
+                        "{out_prefix}/time_evol/psi_p/prob_dense_cut{cut}/px1px2_{i_step}.hdf5"
+                    )
+                    .as_str(),
+                );
+            });
+        }
     }
 }
 
@@ -246,12 +267,35 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
             [None, Some(0.0_f32), None, Some(0.0_f32)],
         );
         // сохранение волновой функции
-        psi.save_sparsed_as_npy(
-            format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
-            4,
-        )
-        .unwrap();
+        // psi.save_sparsed_as_npy(
+        //     format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
+        //     4,
+        // )
+        // .unwrap();
         // интегрирование по y1y2 с разным вырезом серединки
-        // построение F(x1, x2)
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        for cut in cuts {
+            let compute_time = Instant::now();
+            let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
+            print_and_log!(
+                "prob_dense_position -- compute = {:.3}",
+                compute_time.elapsed().as_secs_f32()
+            );
+            measure_time!("prob_dens_position -- plot = ", {
+                prob_dens.plot_log(
+                    format!(
+                        "{out_prefix}/imgs/time_evol/psi_x/prob_dense_cut{cut}/x1x2_{i_step}.png"
+                    )
+                    .as_str(),
+                    [1e-8, 1e-6],
+                );
+            });
+            measure_time!("prob_dens_position -- save = ", {
+                prob_dens.save_as_hdf5(
+                    format!("{out_prefix}/time_evol/psi_x/prob_dense_cut{cut}/x1x2_{i_step}.hdf5")
+                        .as_str(),
+                );
+            });
+        }
     }
 }
