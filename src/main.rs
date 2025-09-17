@@ -65,7 +65,7 @@ fn main() {
     };
     let atomic_potential = |x: [F; 4]| potentials::br_2e2d(x);
 
-    // инициализируем внешнее поле
+    // инициализируем внешнее поле <-- сложно унифицировать в конфиг
     const AU_TO_FS: F = 2.418_884_3e-2;
     let T_fs: F = 2.; //fs
     let T_au: F = T_fs / AU_TO_FS;
@@ -115,7 +115,7 @@ fn main() {
             psi.prob_in_numerical_box(),
         );
         //============================================================
-        //              SSFM and processing in real time
+        //              SSFM and processing in current time
         //============================================================
         measure_time!("SSFM", {
             ssfm.time_step_evol(
@@ -188,26 +188,60 @@ fn main() {
 }
 
 fn initial_processing(psi: &WaveFunction4D, t: &Tspace, out_prefix: &str) {
-    // графики начального состояния
     psi.plot_slice_log(
-        format!("{out_prefix}/psi_init_x2=0_x3=0.png").as_str(),
+        format!("{out_prefix}/psi_zero_slice_x0x1.png").as_str(),
         [1e-8, 1.0],
         [None, None, Some(0.0_f32), Some(0.0_f32)],
     );
     psi.plot_slice_log(
-        format!("{out_prefix}/psi_init_x1=0_x2=0.png").as_str(),
+        format!("{out_prefix}/psi_zero_slice_x0x3.png").as_str(),
         [1e-8, 1.0],
         [None, Some(0.0_f32), Some(0.0_f32), None],
     );
     psi.plot_slice_log(
-        format!("{out_prefix}/psi_init_x0=0_x3=0.png").as_str(),
+        format!("{out_prefix}/psi_zero_slice_x1x2.png").as_str(),
         [1e-8, 1.0],
         [Some(0.0_f32), None, None, Some(0.0_f32)],
     );
     psi.plot_slice_log(
-        format!("{out_prefix}/psi_init_x0=0_x1=0.png").as_str(),
+        format!("{out_prefix}/psi_zero_slice_x0x2.png").as_str(),
+        [1e-8, 1.0],
+        [None, Some(0.0_f32), None, Some(0.0_f32)],
+    );
+    psi.plot_slice_log(
+        format!("{out_prefix}/psi_zero_slice_x2x3.png").as_str(),
         [1e-8, 1.0],
         [Some(0.0_f32), Some(0.0_f32), None, None],
+    );
+
+    let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 1], [2, 3], None);
+    prob_dens.plot_log(
+        format!("{out_prefix}/prob_dense_x0x1.png").as_str(),
+        [1e-8, 1e-6],
+    );
+
+    let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 3], [1, 2], None);
+    prob_dens.plot_log(
+        format!("{out_prefix}/prob_dense_x0x3.png").as_str(),
+        [1e-8, 1e-6],
+    );
+
+    let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [1, 2], [0, 3], None);
+    prob_dens.plot_log(
+        format!("{out_prefix}/prob_dense_x1x2.png").as_str(),
+        [1e-8, 1e-6],
+    );
+
+    let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], None);
+    prob_dens.plot_log(
+        format!("{out_prefix}/prob_dense_x0x2.png").as_str(),
+        [1e-8, 1e-6],
+    );
+
+    let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [2, 3], [0, 1], None);
+    prob_dens.plot_log(
+        format!("{out_prefix}/prob_dense_x2x3.png").as_str(),
+        [1e-8, 1e-6],
     );
 }
 
@@ -228,12 +262,12 @@ fn momentum_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
         // .unwrap();
 
         // интегрирование по py1py2 с разным вырезом серединки
-        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0];
         for cut in cuts {
             let compute_time = Instant::now();
             let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
             print_and_log!(
-                "prob_dense_momentum -- compute = {:.3}",
+                "prob_dens_momentum -- compute = {:.3}",
                 compute_time.elapsed().as_secs_f32()
             );
             measure_time!("prob_dens_momentum -- plot = ", {
@@ -266,19 +300,13 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
             [1e-8, 1e-6],
             [None, Some(0.0_f32), None, Some(0.0_f32)],
         );
-        // сохранение волновой функции
-        // psi.save_sparsed_as_npy(
-        //     format!("{out_prefix}/time_evol/psi_x/psi_x_t_{i_step}.npy").as_str(),
-        //     4,
-        // )
-        // .unwrap();
         // интегрирование по y1y2 с разным вырезом серединки
         let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
         for cut in cuts {
             let compute_time = Instant::now();
             let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
             print_and_log!(
-                "prob_dense_position -- compute = {:.3}",
+                "prob_dens_position -- compute = {:.3}",
                 compute_time.elapsed().as_secs_f32()
             );
             measure_time!("prob_dens_position -- plot = ", {

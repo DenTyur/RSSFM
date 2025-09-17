@@ -7,3 +7,5 @@ pub mod space;
 pub mod ssfm;
 pub mod time_fft;
 pub mod wave_function;
+pub mod wave_function_slice_2d;
+

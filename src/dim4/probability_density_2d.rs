@@ -1,16 +1,11 @@
-use super::space::{Pspace4D, Xspace4D};
-use crate::config::{C, F, I};
-use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
+use crate::config::F;
 use crate::dim4::wave_function::{Representation, WaveFunction4D};
 use crate::macros::check_path;
-use crate::traits::fft_maker::FftMaker;
-use crate::traits::wave_function::{ValueAndSpaceDerivatives, WaveFunction};
 use crate::utils::hdf5_interface;
 use crate::utils::logcolormap;
-use itertools::multizip;
 use ndarray::prelude::*;
-use ndarray::Array4;
-use ndarray::Ix4;
+use rayon::prelude::*;
+
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
@@ -90,7 +85,7 @@ impl ProbabilityDensity2D {
                 |(k, l)| {
                     let coord1 = integrated_axes[0][k];
                     let coord2 = integrated_axes[1][l];
-                    coord1.abs() > cut_value || coord2.abs() > cut_value
+                    coord1.abs() > cut_value && coord2.abs() > cut_value
                 },
             )
         });
@@ -144,6 +139,49 @@ impl ProbabilityDensity2D {
             path,
         )
         .unwrap();
+    }
+
+    pub fn save_as_npy(&self, path: &str) -> Result<(), WriteNpyError> {
+        check_path!(path);
+        // Extract directory from path, default to current directory if none
+        let dir_path = std::path::Path::new(path)
+            .parent()
+            .map(|p| p.to_path_buf())
+            .unwrap_or_else(|| std::path::Path::new(".").to_path_buf());
+
+        // Save sparsed wave function slice to NPY file
+        let writer = BufWriter::new(File::create(path).map_err(|e| {
+            WriteNpyError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create {}: {}", path, e),
+            ))
+        })?);
+
+        self.probability_density.write_npy(writer)?;
+
+        let ax0_path = dir_path.join("ax0.npy");
+        let ax1_path = dir_path.join("ax1.npy");
+
+        // Save sparsed wave function slice to NPY file
+        let writer = BufWriter::new(File::create(ax0_path).map_err(|e| {
+            WriteNpyError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create {}: {}", path, e),
+            ))
+        })?);
+
+        self.axes[0].write_npy(writer)?;
+
+        let writer = BufWriter::new(File::create(ax1_path).map_err(|e| {
+            WriteNpyError::Io(std::io::Error::new(
+                std::io::ErrorKind::Other,
+                format!("Failed to create {}: {}", path, e),
+            ))
+        })?);
+
+        self.axes[1].write_npy(writer)?;
+
+        Ok(())
     }
 
     pub fn save_as_hdf5(&self, path: &str) {
