@@ -1,6 +1,6 @@
 use crate::config::F;
-use crate::dim4::probability_density_2d::ProbabilityDensity2D;
 use crate::dim4::wave_function::WaveFunction4D;
+use crate::dim4::wave_function_processing::probability_density_2d::ProbabilityDensity2D;
 use crate::measure_time;
 use crate::traits::wave_function::WaveFunction;
 use crate::utils::processing::create_zeroed_wavefunction;

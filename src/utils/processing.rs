@@ -8,11 +8,11 @@ use crate::dim2::{
 use crate::dim4::{
     fft_maker::FftMaker4D,
     gauge::{LenthGauge4D, VelocityGauge4D},
-    probability_density_2d::ProbabilityDensity2D,
     space::Xspace4D,
     ssfm::SSFM4D,
     time_fft::TimeFFT,
     wave_function::WaveFunction4D,
+    wave_function_processing::probability_density_2d::ProbabilityDensity2D,
 };
 use crate::measure_time;
 use crate::potentials::absorbing_potentials::{

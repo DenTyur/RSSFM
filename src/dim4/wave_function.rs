@@ -53,7 +53,8 @@ pub struct WaveFunction4D {
 
 /// Создание симметризованной двухэлектронной волновой функции из одноэлектронных
 // impl WaveFunction4D{
-//     pub fn init_as_symmetrized(&self, psi1: &WaveFunction2D, psi2: &WaveFunction2D) -> Self {
+//     pub fn init_symmetrized_product(&self, wf1: &WaveFunction2D, wf2: &WaveFunction2D) -> Self {
+//         assert_eq!(wf1.psi.shape(), wf2.psi.shape(), "Wave functions wf1 and wd2 must have same shape.");
 //         Zip::indexed(&mut )
 //
 //     }
