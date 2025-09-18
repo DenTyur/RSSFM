@@ -141,6 +141,7 @@ impl ProbabilityDensity2D {
         .unwrap();
     }
 
+    /// функция посредственного качества -- использовалась для benchmark
     pub fn save_as_npy(&self, path: &str) -> Result<(), WriteNpyError> {
         check_path!(path);
         // Extract directory from path, default to current directory if none
@@ -198,5 +199,17 @@ impl ProbabilityDensity2D {
         .unwrap();
         hdf5_interface::write_to_hdf5(path, "axis0", None, &self.axes[0]).unwrap();
         hdf5_interface::write_to_hdf5(path, "axis1", None, &self.axes[1]).unwrap();
+    }
+
+    pub fn init_from_hdf5(path: &str) -> Self {
+        let probability_density: Array2<F> =
+            hdf5_interface::read_from_hdf5(path, "probability_density", None).unwrap();
+        let axis0: Array1<F> = hdf5_interface::read_from_hdf5(path, "axis0", None).unwrap();
+        let axis1: Array1<F> = hdf5_interface::read_from_hdf5(path, "axis1", None).unwrap();
+        Self {
+            probability_density,
+            axes: [axis0, axis1],
+            representation: Representation::Position,
+        }
     }
 }

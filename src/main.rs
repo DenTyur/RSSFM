@@ -15,6 +15,7 @@ use rssfm::dim4::{
     ssfm::SSFM4D,
     time_fft::TimeFFT,
     wave_function::WaveFunction4D,
+    wave_function_slice_2d::WFSlice2D,
 };
 use rssfm::measure_time;
 use rssfm::potentials::absorbing_potentials::{
@@ -30,7 +31,9 @@ use rssfm::traits::{
     tsurff::Tsurff,
     wave_function::WaveFunction,
 };
+use rssfm::utils::diagonal::Diagonal;
 use rssfm::utils::plot_log::plot_log;
+use rssfm::utils::processing::create_zeroed_wavefunction;
 use std::array;
 use std::time::Instant;
 
@@ -394,48 +397,49 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
         }
 
         // Срезы волновой функции y1y2 при x1=x2=local_max
-    }
-}
-
-pub fn create_zeroed_wavefunction(original: &WaveFunction4D, threshold: F) -> WaveFunction4D {
-    // Полная копия
-    let mut new_wf = WaveFunction4D {
-        psi: original.psi.clone(),
-        dpsi_d0: original.dpsi_d0.clone(),
-        dpsi_d1: original.dpsi_d1.clone(),
-        dpsi_d2: original.dpsi_d2.clone(),
-        dpsi_d3: original.dpsi_d3.clone(),
-        x: original.x.clone(),
-        p: original.p.clone(),
-        representation: original.representation,
-    };
-
-    // Находим граничные индексы для каждой оси
-    let idx_0 = find_boundary_index(&original.x.grid[0], threshold);
-    let idx_1 = find_boundary_index(&original.x.grid[1], threshold);
-    let idx_2 = find_boundary_index(&original.x.grid[2], threshold);
-    let idx_3 = find_boundary_index(&original.x.grid[3], threshold);
-
-    // Зануляем только нужную область
-    zero_region(&mut new_wf.psi, idx_0, idx_1, idx_2, idx_3);
-
-    new_wf
-}
-
-// Находит индекс, до которого нужно занулять
-fn find_boundary_index(grid: &Array1<F>, threshold: F) -> usize {
-    grid.iter()
-        .position(|&x| x >= threshold)
-        .unwrap_or(grid.len())
-}
-
-fn zero_region(array: &mut Array4<C>, idx_0: usize, idx_1: usize, idx_2: usize, idx_3: usize) {
-    for i in 0..idx_0 {
-        for j in 0..idx_1 {
-            for k in 0..idx_2 {
-                for l in 0..idx_3 {
-                    array[[i, j, k, l]] = C::new(0.0, 0.0);
-                }
+        let cut: F = 5.0;
+        let prob_dens = ProbabilityDensity2D::compute_from_wf4d(psi, [0, 2], [1, 3], Some(cut));
+        print_and_log!("diagonal_maximum: cut={:.3}", cut);
+        measure_time!("plot = ", {
+            prob_dens.plot_log(
+                format!("{out_prefix}/imgs/time_evol/diagonal_maximum/prob_dense_cut{cut}/x1x2_{i_step}.png")
+                    .as_str(),
+                [1e-8, 1e-6],
+            );
+        });
+        measure_time!("save = ", {
+            prob_dens.save_as_hdf5(
+                format!("{out_prefix}/time_evol/diagonal_maximum/prob_dense_cut{cut}/x1x2_{i_step}.hdf5")
+                    .as_str(),
+            );
+        });
+        let diagonal = Diagonal::init_from(&prob_dens.probability_density, &prob_dens.axes[0]);
+        let local_maxima = diagonal.get_local_maxima_above(1e-8);
+        for k in 0..local_maxima.0.len() {
+            if local_maxima.2[k] > 5.0 {
+                print_and_log!(
+                    "local_maxima: {:?}, {:?}, {:?}",
+                    local_maxima.0[k],
+                    local_maxima.1[k],
+                    local_maxima.2[k]
+                );
+                let xmax = local_maxima.2[k];
+                //слайс при этом xmax
+                let slice_y1y2 =
+                    WFSlice2D::init_from_wf4d(psi, [Some(xmax), None, Some(xmax), None]);
+                slice_y1y2.plot_log(
+                    format!(
+                        "{out_prefix}/imgs/time_evol/diagonal_maximum/slice_y1y2/y1y2_{i_step}.hdf5"
+                    )
+                    .as_str(),
+                    [1e-8, 1e-6],
+                );
+                slice_y1y2.save_as_hdf5(
+                    format!(
+                        "{out_prefix}/time_evol/diagonal_maximum/slice_y1y2/y1y2_{i_step}.hdf5"
+                    )
+                    .as_str(),
+                );
             }
         }
     }

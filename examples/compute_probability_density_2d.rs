@@ -9,20 +9,20 @@ fn main() {
     let psi = WaveFunction4D::init_from_hdf5(
         "/home/denis/Programs/atoms_and_ions/DATA/br/br2e2d_N64_dx05_interact.hdf5",
     );
-    // psi.plot_slice_log(
-    //     "./slice.png",
-    //     [1e-8, 1e-6],
-    //     [None, Some(0.0), None, Some(0.0)],
-    // );
+    psi.plot_slice_log(
+        "./out/slice.png",
+        [1e-8, 1e-6],
+        [None, Some(0.0), None, Some(0.0)],
+    );
 
     let prob_density = ProbabilityDensity2D::compute_from_wf4d(&psi, [0, 2], [1, 3], Some(5.0));
-    prob_density.plot_log("./prob_density.png", [1e-8, 1e-6]);
+    prob_density.plot_log("./out/prob_density.png", [1e-8, 1e-6]);
 
-    // measure_time!("hdf5 time:", {
-    //     prob_density.save_as_hdf5("./prob_density.hdf5");
-    // });
-    // measure_time!("npy time:", {
-    //     prob_density.save_as_npy("./prob_density.npy");
-    // });
+    measure_time!("hdf5 time:", {
+        prob_density.save_as_hdf5("./out/prob_density.hdf5");
+    });
+    measure_time!("npy time:", {
+        prob_density.save_as_npy("./out/prob_density.npy");
+    });
     println!("Завершен успешно!");
 }
