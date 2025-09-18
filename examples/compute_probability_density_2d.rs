@@ -1,5 +1,5 @@
-use rssfm::dim4::probability_density_2d::ProbabilityDensity2D;
 use rssfm::dim4::wave_function::WaveFunction4D;
+use rssfm::dim4::wave_function_processing::probability_density_2d::ProbabilityDensity2D;
 use rssfm::measure_time;
 use rssfm::traits::wave_function::WaveFunction;
 

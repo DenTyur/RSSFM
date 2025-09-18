@@ -89,7 +89,15 @@ impl WFSlice2D {
         hdf5_interface::write_to_hdf5_complex(path, "psi_slice", None, &self.psi_slice).unwrap();
         hdf5_interface::create_str_data_attr(
             path,
-            "psi_slice",
+            "psi_slice_re",
+            None,
+            "representation",
+            self.representation.as_str(),
+        )
+        .unwrap();
+        hdf5_interface::create_str_data_attr(
+            path,
+            "psi_slice_im",
             None,
             "representation",
             self.representation.as_str(),

@@ -11,6 +11,7 @@ use itertools::multizip;
 use ndarray::prelude::*;
 use ndarray::Array4;
 use ndarray::Ix4;
+use ndarray::Zip;
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
@@ -49,6 +50,14 @@ pub struct WaveFunction4D {
     pub p: Pspace4D,
     pub representation: Representation,
 }
+
+/// Создание симметризованной двухэлектронной волновой функции из одноэлектронных
+// impl WaveFunction4D{
+//     pub fn init_as_symmetrized(&self, psi1: &WaveFunction2D, psi2: &WaveFunction2D) -> Self {
+//         Zip::indexed(&mut )
+//
+//     }
+// }
 
 impl WaveFunction4D {
     pub const DIM: usize = 4;
