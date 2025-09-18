@@ -60,11 +60,7 @@ impl WFSlice2D {
         // Применяем срез к пси-функции
         let psi_slice = wf.psi.slice(slice).to_owned();
         // создаем axes
-        let axes_indices: Vec<usize> = fixed_values
-            .iter()
-            .enumerate()
-            .filter_map(|(i, opt)| opt.as_ref().map(|_| i))
-            .collect();
+        let axes_indices: Vec<usize> = (0..4).filter(|&i| fixed_values[i].is_none()).collect();
         let axes = [grid[axes_indices[0]].clone(), grid[axes_indices[1]].clone()];
         let representation = wf.representation;
         Self {
