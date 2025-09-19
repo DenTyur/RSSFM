@@ -7,8 +7,18 @@ use rssfm::traits::wave_function::WaveFunction;
 use rssfm::utils::processing::create_zeroed_wavefunction;
 
 fn main() {
-    println!("Запуск zeroed_wf...");
+    println!("Запуск slice2d...");
+    let mut psi = WaveFunction4D::init_from_hdf5(
+        "/home/denis/Programs/atoms_and_ions/DATA/br/br2e2d_N64_dx05_interact.hdf5",
+    );
+    let x = Xspace4D::new([-15., -10., -15., -10.], [0.5; 4], [60, 40, 60, 40]);
+    psi.extend(&x);
 
+    let slice = WFSlice2D::x1_same_x2_y1_anti_y2(&psi);
+    slice.plot_log("./out/slice.png", [1e-8, 1e-6]);
+}
+
+fn test1() {
     let mut psi = WaveFunction4D::init_from_hdf5(
         "/home/denis/Programs/atoms_and_ions/DATA/br/br2e2d_N64_dx05_interact.hdf5",
     );

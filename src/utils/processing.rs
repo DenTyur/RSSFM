@@ -34,6 +34,66 @@ use rayon::prelude::*;
 use std::array;
 use std::time::Instant;
 
+pub fn create_double_ionized_part(original: &WaveFunction4D, threshold: F) -> WaveFunction4D {
+    // Полная копия
+    let mut new_wf = WaveFunction4D {
+        psi: original.psi.clone(),
+        dpsi_d0: original.dpsi_d0.clone(),
+        dpsi_d1: original.dpsi_d1.clone(),
+        dpsi_d2: original.dpsi_d2.clone(),
+        dpsi_d3: original.dpsi_d3.clone(),
+        x: original.x.clone(),
+        p: original.p.clone(),
+        representation: original.representation,
+    };
+
+    // Зануляем область где ХОТЯ БЫ ОДИН электрон близко к началу
+    zero_bound_and_single_ionized_region(&mut new_wf.psi, &original.x, threshold);
+
+    new_wf
+}
+fn zero_bound_and_single_ionized_region(array: &mut Array4<C>, xspace: &Xspace4D, radius: F) {
+    let threshold_sq = radius * radius;
+    let grid0 = &xspace.grid[0];
+    let grid1 = &xspace.grid[1];
+    let grid2 = &xspace.grid[2];
+    let grid3 = &xspace.grid[3];
+
+    // Кэшируем информацию о близости для каждого измерения
+    let dim0_close: Vec<bool> = grid0.iter().map(|&x| x * x <= threshold_sq).collect();
+    let dim1_close: Vec<bool> = grid1.iter().map(|&y| y * y <= threshold_sq).collect();
+    let dim2_close: Vec<bool> = grid2.iter().map(|&x| x * x <= threshold_sq).collect();
+    let dim3_close: Vec<bool> = grid3.iter().map(|&y| y * y <= threshold_sq).collect();
+
+    let shape = array.shape().to_owned();
+
+    for i in 0..shape[0] {
+        for j in 0..shape[1] {
+            // Если первая координата первого электрона близко ИЛИ вторая координата первого электрона близко
+            if dim0_close[i] || dim1_close[j] {
+                // Зануляем ВСЕ точки для этих (i,j) - первый электрон близко
+                for k in 0..shape[2] {
+                    for l in 0..shape[3] {
+                        array[[i, j, k, l]] = C::new(0.0, 0.0);
+                    }
+                }
+                continue;
+            }
+
+            // Первый электрон далеко, проверяем второй
+            for k in 0..shape[2] {
+                for l in 0..shape[3] {
+                    // Если первая координата второго электрона близко ИЛИ вторая координата второго электрона близко
+                    if dim2_close[k] || dim3_close[l] {
+                        array[[i, j, k, l]] = C::new(0.0, 0.0);
+                    }
+                }
+            }
+        }
+    }
+}
+
+// Зануляет серединку (связанное состояние) волновой функции
 pub fn create_zeroed_wavefunction(original: &WaveFunction4D, threshold: F) -> WaveFunction4D {
     // Полная копия
     let mut new_wf = WaveFunction4D {

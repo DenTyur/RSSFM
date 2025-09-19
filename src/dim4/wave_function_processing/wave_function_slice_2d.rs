@@ -15,6 +15,36 @@ pub struct WFSlice2D {
 }
 
 impl WFSlice2D {
+    pub fn x1_same_x2_y1_anti_y2(wf: &WaveFunction4D) -> Self {
+        assert_eq!(
+            wf.representation,
+            Representation::Position,
+            "Представление не Position"
+        );
+        let shape = wf.psi.shape();
+        let n0 = shape[0];
+        let n1 = shape[1];
+        let n2 = shape[2];
+        let n3 = shape[3];
+        assert_eq!(n0, n2, "n0.len != n2.len");
+        assert_eq!(n1, n3, "n1.len != n3.len");
+
+        let mut psi_slice: Array2<C> = Array2::zeros((n0, n1));
+
+        for i in 0..n0 {
+            for j in 0..n1 {
+                let y2_index = n3 - 1 - j;
+                psi_slice[[i, j]] = wf.psi[[i, j, i, y2_index]];
+            }
+        }
+
+        Self {
+            psi_slice,
+            axes: [wf.x.grid[0].clone(), wf.x.grid[1].clone()],
+            representation: Representation::Position,
+        }
+    }
+
     pub fn init_from_wf4d(
         wf: &WaveFunction4D,
         fixed_values: [Option<F>; 4], // None означает ось, по которой берется срез
@@ -105,5 +135,18 @@ impl WFSlice2D {
         .unwrap();
         hdf5_interface::write_to_hdf5(path, "axis0", None, &self.axes[0]).unwrap();
         hdf5_interface::write_to_hdf5(path, "axis1", None, &self.axes[1]).unwrap();
+    }
+
+    pub fn init_from_hdf5(path: &str) -> Self {
+        check_path!(path);
+        let psi_slice: Array2<C> =
+            hdf5_interface::read_from_hdf5_complex(path, "psi_slice", None).unwrap();
+        let axis0: Array1<F> = hdf5_interface::read_from_hdf5(path, "axis0", None).unwrap();
+        let axis1: Array1<F> = hdf5_interface::read_from_hdf5(path, "axis1", None).unwrap();
+        Self {
+            psi_slice,
+            axes: [axis0, axis1],
+            representation: Representation::Position,
+        }
     }
 }
