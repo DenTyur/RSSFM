@@ -2,13 +2,13 @@ use crate::config::{F, PI};
 use crate::traits::field::Field;
 
 /// Униполярный импульс
-pub struct UnipolarPuls1D {
+pub struct UnipolarPulse1D {
     pub amplitude: F,
     pub omega: F,
     pub x_envelop: F,
 }
 
-impl UnipolarPuls1D {
+impl UnipolarPulse1D {
     pub fn new(amplitude: F, omega: F, x_envelop: F) -> Self {
         Self {
             amplitude,
@@ -47,7 +47,7 @@ impl UnipolarPuls1D {
     }
 }
 
-impl Field<1> for UnipolarPuls1D {
+impl Field<1> for UnipolarPulse1D {
     fn vector_potential(&self, t: F) -> [F; 1] {
         panic!("Векторный потенциал не реализован! Заглушка.");
         let vec_pot: F = 0.0;

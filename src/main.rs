@@ -46,7 +46,7 @@ fn main() {
 
     // задаем параметры временной сетки
     let t_step: F = 0.05 / AU_TO_FS; // au (converted from fs)
-    let n_steps: usize = 10;
+    let n_steps: usize = 12;
     let dt: F = t_step / n_steps as F;
     let nt: usize = 45;
     let mut t = Tspace::new(0., dt, n_steps, nt);
@@ -329,60 +329,60 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
         // =================================================================================
         // Получим импульсное распределение однократной и двойной ионизации
         // 1. Вырезать серединку (заполнить ее нулями)
-        let threshold: F = 5.0;
-        let mut psi_zeroed = create_zeroed_wavefunction(psi, threshold);
-        // 2. Сохранить обрезку
-        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
-        for cut in cuts {
-            let compute_time = Instant::now();
-            let prob_dens =
-                ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
-            print_and_log!(
-                "prob_dens_position -- compute = {:.3}",
-                compute_time.elapsed().as_secs_f32()
-            );
-            prob_dens.plot_log(
-                    format!(
-                        "{out_prefix}/imgs/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.png"
-                    )
-                    .as_str(),
-                    [1e-8, 1e-6],
-                );
-            prob_dens.save_as_hdf5(
-                format!(
-                    "{out_prefix}/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.hdf5"
-                )
-                .as_str(),
-            );
-        }
+        // let threshold: F = 5.0;
+        // let mut psi_zeroed = create_zeroed_wavefunction(psi, threshold);
+        // // 2. Сохранить обрезку
+        // let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
+        // for cut in cuts {
+        //     let compute_time = Instant::now();
+        //     let prob_dens =
+        //         ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
+        //     print_and_log!(
+        //         "prob_dens_position -- compute = {:.3}",
+        //         compute_time.elapsed().as_secs_f32()
+        //     );
+        //     prob_dens.plot_log(
+        //             format!(
+        //                 "{out_prefix}/imgs/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.png"
+        //             )
+        //             .as_str(),
+        //             [1e-8, 1e-6],
+        //         );
+        //     prob_dens.save_as_hdf5(
+        //         format!(
+        //             "{out_prefix}/time_evol/psi_zeroed_x/prob_dense_cut{cut}/x1x2_{i_step}.hdf5"
+        //         )
+        //         .as_str(),
+        //     );
+        // }
         // 3. Сделать прямое преобразование фурье
-        let mut fft_maker = FftMaker4D::new(&psi_zeroed.x.n);
-        fft_maker.modify_psi(&mut psi_zeroed);
-        fft_maker.do_fft(&mut psi_zeroed);
+        // let mut fft_maker = FftMaker4D::new(&psi_zeroed.x.n);
+        // fft_maker.modify_psi(&mut psi_zeroed);
+        // fft_maker.do_fft(&mut psi_zeroed);
         // 4. Сохранить в импульсном представлении обрезку
-        let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
-        for cut in cuts {
-            let compute_time = Instant::now();
-            let prob_dens =
-                ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
-            print_and_log!(
-                "prob_dens_momentum -- compute = {:.3}",
-                compute_time.elapsed().as_secs_f32()
-            );
-            prob_dens.plot_log(
-                    format!(
-                        "{out_prefix}/imgs/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.png"
-                    )
-                    .as_str(),
-                    [1e-8, 1e-6],
-                );
-            prob_dens.save_as_hdf5(
-                format!(
-                    "{out_prefix}/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.hdf5"
-                )
-                .as_str(),
-            );
-        }
+        // let cuts = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0];
+        // for cut in cuts {
+        //     let compute_time = Instant::now();
+        //     let prob_dens =
+        //         ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], Some(cut));
+        //     print_and_log!(
+        //         "prob_dens_momentum -- compute = {:.3}",
+        //         compute_time.elapsed().as_secs_f32()
+        //     );
+        //     prob_dens.plot_log(
+        //             format!(
+        //                 "{out_prefix}/imgs/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.png"
+        //             )
+        //             .as_str(),
+        //             [1e-8, 1e-6],
+        //         );
+        //     prob_dens.save_as_hdf5(
+        //         format!(
+        //             "{out_prefix}/time_evol/psi_zeroed_p/prob_dense_cut{cut}/px1px2_{i_step}.hdf5"
+        //         )
+        //         .as_str(),
+        //     );
+        // }
 
         // Срезы волновой функции y1y2 при x1=x2=local_max
         let cut: F = 5.0;
@@ -401,6 +401,15 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
         );
         let diagonal = Diagonal::init_from(&prob_dens.probability_density, &prob_dens.axes[0]);
         let local_maxima = diagonal.get_local_maxima_above(1e-8);
+        print_and_log!("local_maxima.len = {:?}", local_maxima.0.len());
+        for k in 0..local_maxima.0.len() {
+            print_and_log!(
+                "local_maxima_emunerate: {:?}, {:?}, {:?}",
+                local_maxima.0[k],
+                local_maxima.1[k],
+                local_maxima.2[k]
+            );
+        };
         for k in 0..local_maxima.0.len() {
             print_and_log!(
                 "local_maxima: {:?}, {:?}, {:?}",
@@ -408,20 +417,23 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                 local_maxima.1[k],
                 local_maxima.2[k]
             );
-            let xmax = local_maxima.2[k].max(5.0);
+            let mut xmax: F = 5.0;
+            if local_maxima.2[k] > xmax {
+                xmax = local_maxima.2[k];
+            }
             print_and_log!("xmax = {:?}", xmax);
 
             //слайс при этом xmax
             let slice_y1y2 = WFSlice2D::init_from_wf4d(psi, [Some(xmax), None, Some(xmax), None]);
             slice_y1y2.plot_log(
                 format!(
-                    "{out_prefix}/imgs/time_evol/diagonal_maximum/slice_y1y2/y1y2_{i_step}.png"
+                    "{out_prefix}/imgs/time_evol/diagonal_maximum/slice_y1y2_k={k}/y1y2_i={i_step}_xmax={xmax}.png"
                 )
                 .as_str(),
                 [1e-15, 1e-8],
             );
             slice_y1y2.save_as_hdf5(
-                format!("{out_prefix}/time_evol/diagonal_maximum/slice_y1y2/y1y2_{i_step}.hdf5")
+                format!("{out_prefix}/time_evol/diagonal_maximum/slice_y1y2_k={k}/y1y2_i={i_step}_xmax={xmax}.hdf5")
                     .as_str(),
             );
         }
@@ -446,8 +458,10 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                 let mut psi_double = create_zeroed_wavefunction(psi, radius);
                 psi_double
                     .save_sparsed_as_npy(
-                        format!("{out_prefix}/time_evol/psi_double/psi_double_{i_step}.hdf5")
-                            .as_str(),
+                        format!(
+                            "{out_prefix}/time_evol/psi_double_{radius}/psi_double_{i_step}.hdf5"
+                        )
+                        .as_str(),
                         4,
                     )
                     .unwrap();
@@ -456,12 +470,12 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                     ProbabilityDensity2D::compute_from_wf4d(&psi_double, [0, 2], [1, 3], None);
                 prob_dens.save_as_hdf5(
                     format!(
-                        "{out_prefix}/time_evol/psi_double_prob_dens_x1x2_None/x1x2_{i_step}.hdf5"
+                        "{out_prefix}/time_evol/psi_double_prob_dens_x1x2_r={radius}/x1x2_{i_step}.hdf5"
                     )
                     .as_str(),
                 );
                 prob_dens.plot_log(
-                    format!("{out_prefix}/imgs/time_evol/psi_double_prob_dens_x1x2_None/x1x2_{i_step}.png")
+                    format!("{out_prefix}/imgs/time_evol/psi_double_prob_dens_x1x2_r={radius}/x1x2_{i_step}.png")
                         .as_str(),
                     [1e-8, 1e-6],
                 );
@@ -470,12 +484,12 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                     ProbabilityDensity2D::compute_from_wf4d(&psi_double, [1, 3], [0, 2], None);
                 prob_dens.save_as_hdf5(
                     format!(
-                        "{out_prefix}/time_evol/psi_double_prob_dens_y1y2_None/y1y2_{i_step}.hdf5"
+                        "{out_prefix}/time_evol/psi_double_prob_dens_y1y2_r={radius}/y1y2_{i_step}.hdf5"
                     )
                     .as_str(),
                 );
                 prob_dens.plot_log(
-                    format!("{out_prefix}/imgs/time_evol/psi_double_prob_dens_y1y2_None/y1y2_{i_step}.png")
+                    format!("{out_prefix}/imgs/time_evol/psi_double_prob_dens_y1y2_r={radius}/y1y2_{i_step}.png")
                         .as_str(),
                     [1e-8, 1e-6],
                 );
@@ -485,23 +499,18 @@ fn position_processing(psi: &WaveFunction4D, t: &Tspace, i_step: usize, out_pref
                 fft_maker.do_fft(&mut psi_double);
 
                 // Сохранить в импульсном представлении
-                let compute_time = Instant::now();
                 let prob_dens =
-                    ProbabilityDensity2D::compute_from_wf4d(&psi_zeroed, [0, 2], [1, 3], None);
-                print_and_log!(
-                    "prob_dens_momentum -- compute = {:.3}",
-                    compute_time.elapsed().as_secs_f32()
-                );
+                    ProbabilityDensity2D::compute_from_wf4d(&psi_double, [0, 2], [1, 3], None);
                 prob_dens.plot_log(
                             format!(
-                                "{out_prefix}/imgs/time_evol/psi_double_p/prob_dense_px1px2_None/px1px2_{i_step}.png"
+                                "{out_prefix}/imgs/time_evol/psi_double_p/prob_dense_px1px2_r={radius}/px1px2_{i_step}.png"
                             )
                             .as_str(),
                             [1e-8, 1e-6],
                         );
                 prob_dens.save_as_hdf5(
                         format!(
-                            "{out_prefix}/time_evol/psi_double_p/prob_dense_px1px2_None/px1px2_{i_step}.hdf5"
+                            "{out_prefix}/time_evol/psi_double_p/prob_dense_px1px2_r={radius}/px1px2_{i_step}.hdf5"
                         )
                         .as_str(),
                     );

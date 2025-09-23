@@ -2,6 +2,7 @@ use super::{
     fft_maker::FftMaker2D,
     space::{Pspace2D, Xspace2D},
 };
+use crate::common::representation::Representation;
 use crate::config::{C, F, I, PI};
 use crate::macros::check_path;
 use crate::traits::{
@@ -26,6 +27,25 @@ pub struct WaveFunction2D {
     pub dpsi_dy: Option<Array2<C>>,
     pub x: Xspace2D,
     pub p: Pspace2D,
+    pub representation: Representation,
+}
+
+impl WaveFunction2D {
+    pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
+            .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &self.x.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x1", Some("Xspace"), &self.x.grid[1]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &self.p.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p1", Some("Pspace"), &self.p.grid[1]).unwrap();
+    }
 }
 
 impl WaveFunction2D {
@@ -33,12 +53,14 @@ impl WaveFunction2D {
 
     pub fn new(psi: Array2<C>, x: Xspace2D) -> Self {
         let p = Pspace2D::init(&x);
+        let representation = Representation::Position;
         Self {
             psi,
             x,
             p,
             dpsi_dx: None,
             dpsi_dy: None,
+            representation,
         }
     }
 
@@ -63,12 +85,14 @@ impl WaveFunction2D {
                     })
             });
         let p = Pspace2D::init(&x);
+        let representation = Representation::Position;
         Self {
             psi,
             x,
             p,
             dpsi_dx: None,
             dpsi_dy: None,
+            representation,
         }
     }
 
@@ -295,12 +319,14 @@ impl WaveFunction<2> for WaveFunction2D {
     fn init_from_npy(psi_path: &str, x: Self::Xspace) -> Self {
         let reader = File::open(psi_path).unwrap();
         let p = Pspace2D::init(&x);
+        let representation = Representation::Position;
         Self {
             psi: Array::<C, Ix2>::read_npy(reader).unwrap(),
             x,
             p,
             dpsi_dx: None,
             dpsi_dy: None,
+            representation,
         }
     }
 
@@ -325,12 +351,14 @@ impl WaveFunction<2> for WaveFunction2D {
         };
 
         let p = Pspace2D::init(&xspace);
+        let representation = Representation::Position;
         Self {
             psi,
             x: xspace,
             p,
             dpsi_dx: None,
             dpsi_dy: None,
+            representation,
         }
     }
 }

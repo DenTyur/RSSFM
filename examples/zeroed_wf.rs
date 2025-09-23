@@ -11,11 +11,17 @@ fn main() {
         "/home/denis/Programs/atoms_and_ions/DATA/br/br2e2d_N64_dx05_interact.hdf5",
     );
 
-    let psi_zeroed = create_double_ionized_part(&psi, 1.0);
+    let psi_zeroed = create_double_ionized_part(&psi, 2.0);
     psi_zeroed.plot_slice_log(
-        "./out/zeroed_double_slice.png",
+        "./out/zeroed_double_slice_y1y2.png",
         [1e-8, 1e-6],
-        [None, Some(2.0), None, Some(2.0)],
+        [Some(0.0), None, Some(0.0), None],
+    );
+
+    psi_zeroed.plot_slice_log(
+        "./out/zeroed_double_slice_x1x2.png",
+        [1e-8, 1e-6],
+        [None, Some(0.0), None, Some(0.0)],
     );
 
     let zeroed_prob_density =

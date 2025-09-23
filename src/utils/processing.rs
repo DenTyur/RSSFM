@@ -59,33 +59,15 @@ fn zero_bound_and_single_ionized_region(array: &mut Array4<C>, xspace: &Xspace4D
     let grid2 = &xspace.grid[2];
     let grid3 = &xspace.grid[3];
 
-    // Кэшируем информацию о близости для каждого измерения
-    let dim0_close: Vec<bool> = grid0.iter().map(|&x| x * x <= threshold_sq).collect();
-    let dim1_close: Vec<bool> = grid1.iter().map(|&y| y * y <= threshold_sq).collect();
-    let dim2_close: Vec<bool> = grid2.iter().map(|&x| x * x <= threshold_sq).collect();
-    let dim3_close: Vec<bool> = grid3.iter().map(|&y| y * y <= threshold_sq).collect();
-
     let shape = array.shape().to_owned();
-
-    for i in 0..shape[0] {
-        for j in 0..shape[1] {
-            // Если первая координата первого электрона близко ИЛИ вторая координата первого электрона близко
-            if dim0_close[i] || dim1_close[j] {
-                // Зануляем ВСЕ точки для этих (i,j) - первый электрон близко
-                for k in 0..shape[2] {
-                    for l in 0..shape[3] {
-                        array[[i, j, k, l]] = C::new(0.0, 0.0);
-                    }
-                }
-                continue;
-            }
-
-            // Первый электрон далеко, проверяем второй
-            for k in 0..shape[2] {
-                for l in 0..shape[3] {
-                    // Если первая координата второго электрона близко ИЛИ вторая координата второго электрона близко
-                    if dim2_close[k] || dim3_close[l] {
-                        array[[i, j, k, l]] = C::new(0.0, 0.0);
+    for i0 in 0..shape[0] {
+        for i1 in 0..shape[1] {
+            for i2 in 0..shape[2] {
+                for i3 in 0..shape[3] {
+                    let r1_sq = grid0[[i0]].powi(2) + grid1[[i1]].powi(2);
+                    let r2_sq = grid2[[i2]].powi(2) + grid3[[i3]].powi(2);
+                    if r1_sq < threshold_sq || r2_sq < threshold_sq {
+                        array[[i0, i1, i2, i3]] = C::new(0.0, 0.0);
                     }
                 }
             }

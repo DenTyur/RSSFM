@@ -1,4 +1,5 @@
 use super::wave_function::WaveFunction1D;
+use crate::common::representation::Representation;
 use crate::config::{C, F, I, PI};
 use crate::traits::fft_maker::FftMaker;
 use itertools::multizip;
@@ -23,10 +24,12 @@ impl FftMaker1D {
     pub fn do_fft(&mut self, psi: &mut WaveFunction1D) {
         ndfft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[0], 0);
         psi.psi = self.psi_temp.clone();
+        psi.representation = Representation::Momentum;
     }
     pub fn do_ifft(&mut self, psi: &mut WaveFunction1D) {
         ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[0], 0);
         psi.psi = self.psi_temp.clone();
+        psi.representation = Representation::Position;
     }
 }
 

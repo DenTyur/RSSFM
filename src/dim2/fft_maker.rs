@@ -1,4 +1,5 @@
 use super::wave_function::WaveFunction2D;
+use crate::common::representation::Representation;
 use crate::config::{C, F, I, PI};
 use crate::traits::fft_maker::FftMaker;
 use itertools::multizip;
@@ -23,12 +24,12 @@ impl FftMaker2D {
     pub fn do_fft(&mut self, psi: &mut WaveFunction2D) {
         ndfft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[0], 0);
         ndfft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[1], 1);
+        psi.representation = Representation::Momentum;
     }
     pub fn do_ifft(&mut self, psi: &mut WaveFunction2D) {
         ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[1], 1);
         ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[0], 0);
-        // ndifft_par(&psi.psi, &mut self.psi_temp, &mut self.handler[0], 0);
-        // ndifft_par(&self.psi_temp, &mut psi.psi, &mut self.handler[1], 1);
+        psi.representation = Representation::Position;
     }
 }
 

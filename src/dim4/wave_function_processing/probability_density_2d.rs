@@ -1,5 +1,6 @@
+use crate::common::representation::Representation;
 use crate::config::F;
-use crate::dim4::wave_function::{Representation, WaveFunction4D};
+use crate::dim4::wave_function::WaveFunction4D;
 use crate::macros::check_path;
 use crate::utils::hdf5_interface;
 use crate::utils::logcolormap;

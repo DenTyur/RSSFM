@@ -68,6 +68,11 @@ path = "src/out/br_linear_polarization/dim1/inner/br_1e1d_inner.rs"
 name = "br_2e1d_sym_nonint_wf"
 path = "src/out/br_linear_polarization/dim1/sym_nonint_wf2e1d/br_2e1d_sym_nonint_wf.rs"
 
+[[bin]]
+name = "br_2e1d_int"
+path = "src/out/br_linear_polarization/dim1/int_2e1d/br_2e1d_int.rs"
+
+
 # br linear polarization MODEL 6.75 3.37
 [[bin]]
 name = "model_br_6_75_3_37_external"

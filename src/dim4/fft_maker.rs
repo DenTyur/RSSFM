@@ -1,5 +1,6 @@
 use super::space::{Pspace4D, Xspace4D};
-use super::wave_function::{Representation, WaveFunction4D};
+use super::wave_function::WaveFunction4D;
+use crate::common::representation::Representation;
 use crate::config::{C, F, I, PI};
 use crate::traits::fft_maker::FftMaker;
 use itertools::multizip;

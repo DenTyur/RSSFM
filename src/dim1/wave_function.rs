@@ -2,6 +2,7 @@ use super::{
     fft_maker::FftMaker1D,
     space::{Pspace1D, Xspace1D},
 };
+use crate::common::representation::Representation;
 use crate::config::{C, F, I, PI};
 use crate::macros::check_path;
 use crate::traits::{
@@ -25,6 +26,23 @@ pub struct WaveFunction1D {
     pub dpsi_dx: Option<Array1<C>>,
     pub x: Xspace1D,
     pub p: Pspace1D,
+    pub representation: Representation,
+}
+
+impl WaveFunction1D {
+    pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
+            .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &self.x.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &self.p.grid[0]).unwrap();
+    }
 }
 
 impl WaveFunction1D {
@@ -37,6 +55,7 @@ impl WaveFunction1D {
             x,
             p,
             dpsi_dx: None,
+            representation: Representation::Position,
         }
     }
 
@@ -302,6 +321,7 @@ impl WaveFunction<1> for WaveFunction1D {
             x,
             p,
             dpsi_dx: None,
+            representation: Representation::Position,
         }
     }
 
@@ -327,6 +347,7 @@ impl WaveFunction<1> for WaveFunction1D {
             x: xspace,
             p,
             dpsi_dx: None,
+            representation: Representation::Position,
         }
     }
 }

@@ -1,4 +1,5 @@
 use super::space::{Pspace4D, Xspace4D};
+use crate::common::representation::Representation;
 use crate::config::{C, F, I};
 use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
 use crate::dim4::fft_maker::FftMaker4D;
@@ -20,21 +21,21 @@ use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::io::{BufRead, BufReader, Error, Write};
 
-/// Перечисления для указания, вкаком представлении находитсяволновая функция
-#[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-pub enum Representation {
-    Position, // координатное представление
-    Momentum, // импульсное представление
-}
-
-impl Representation {
-    pub fn as_str(&self) -> &str {
-        match self {
-            Representation::Position => "Position",
-            Representation::Momentum => "Momentum",
-        }
-    }
-}
+// /// Перечисления для указания, вкаком представлении находитсяволновая функция
+// #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
+// pub enum Representation {
+//     Position, // координатное представление
+//     Momentum, // импульсное представление
+// }
+//
+// impl Representation {
+//     pub fn as_str(&self) -> &str {
+//         match self {
+//             Representation::Position => "Position",
+//             Representation::Momentum => "Momentum",
+//         }
+//     }
+// }
 
 /// Производные не реализованы, потому что для распределения ионов они не нужны.
 /// Если надо будет считать импульсные распределения электронов или плотность потока вероятности, производные понадобятся.
