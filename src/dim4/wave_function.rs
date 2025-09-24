@@ -21,22 +21,6 @@ use std::fs::OpenOptions;
 use std::io::BufWriter;
 use std::io::{BufRead, BufReader, Error, Write};
 
-// /// Перечисления для указания, вкаком представлении находитсяволновая функция
-// #[derive(PartialEq, Eq, PartialOrd, Ord, Debug, Clone, Copy)]
-// pub enum Representation {
-//     Position, // координатное представление
-//     Momentum, // импульсное представление
-// }
-//
-// impl Representation {
-//     pub fn as_str(&self) -> &str {
-//         match self {
-//             Representation::Position => "Position",
-//             Representation::Momentum => "Momentum",
-//         }
-//     }
-// }
-
 /// Производные не реализованы, потому что для распределения ионов они не нужны.
 /// Если надо будет считать импульсные распределения электронов или плотность потока вероятности, производные понадобятся.
 /// Но вычисление производных это увеличение оперативной памяти в 5 раз (можно оптимизировать до 2
@@ -51,15 +35,6 @@ pub struct WaveFunction4D {
     pub p: Pspace4D,
     pub representation: Representation,
 }
-
-/// Создание симметризованной двухэлектронной волновой функции из одноэлектронных
-// impl WaveFunction4D{
-//     pub fn init_symmetrized_product(&self, wf1: &WaveFunction2D, wf2: &WaveFunction2D) -> Self {
-//         assert_eq!(wf1.psi.shape(), wf2.psi.shape(), "Wave functions wf1 and wd2 must have same shape.");
-//         Zip::indexed(&mut )
-//
-//     }
-// }
 
 impl WaveFunction4D {
     pub const DIM: usize = 4;
@@ -83,6 +58,28 @@ impl WaveFunction4D {
         self.dpsi_d1 = Some(self.psi.clone());
         self.dpsi_d2 = Some(self.psi.clone());
         self.dpsi_d3 = Some(self.psi.clone());
+    }
+}
+
+impl WaveFunction4D {
+    pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
+            .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &self.x.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x1", Some("Xspace"), &self.x.grid[1]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x2", Some("Xspace"), &self.x.grid[2]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x3", Some("Xspace"), &self.x.grid[3]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &self.p.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p1", Some("Pspace"), &self.p.grid[1]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p2", Some("Pspace"), &self.p.grid[2]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p3", Some("Pspace"), &self.p.grid[3]).unwrap();
     }
 }
 
@@ -399,12 +396,12 @@ impl WaveFunction<4> for WaveFunction4D {
 
     fn prob_in_numerical_box(&self) -> F {
         let volume: F = self.x.dx[0] * self.x.dx[1] * self.x.dx[2] * self.x.dx[3];
-        self.psi.mapv(|a| (a.re.powi(2) + a.im.powi(2))).sum() * volume
+        self.psi.mapv(|a| a.norm_sqr()).sum() * volume
     }
 
     fn norm(&self) -> F {
         let volume: F = self.x.dx[0] * self.x.dx[1] * self.x.dx[2] * self.x.dx[3];
-        (self.psi.mapv(|a| (a.re.powi(2) + a.im.powi(2))).sum() * volume).sqrt()
+        (self.psi.mapv(|a| a.norm_sqr()).sum() * volume).sqrt()
     }
 
     fn normalization_by_1(&mut self) {
