@@ -1,4 +1,4 @@
-use super::space::Xspace2D;
+use super::{space::Xspace2D, wave_function::WaveFunction2D};
 use crate::config::{C, F};
 use crate::utils::hdf5_interface;
 use ndarray::prelude::*;
@@ -7,30 +7,31 @@ use plotters::prelude::*;
 use rayon::prelude::*;
 
 #[derive(Debug, Clone)]
-pub struct IonizProb2D<const N: usize> {
-    pub x_surf: [F; N],
-    pub ioniz_prob: [Vec<F>; N],
-    pub x: Xspace2D,
+pub struct DoubleIonizProb2e1d {
+    pub r_surf: Vec<F>,
+    pub ioniz_prob: Vec<Vec<F>>,
     pub t: Array1<F>,
 }
 
-impl<const N: usize> IonizProb2D<N> {
-    pub fn new(x_surf: [F; N], x: Xspace2D, t: Array1<F>) -> Self {
-        let ioniz_prob: [Vec<F>; N] = std::array::from_fn(|_| Vec::new());
+impl DoubleIonizProb2e1d {
+    /// r_surf = [8, 10, 15, 20] -- интеграл считается по области r_1,2>r_surf
+    pub fn new(r_surf: Vec<F>, t: Array1<F>) -> Self {
+        let ioniz_prob: Vec<Vec<F>> = vec![Vec::new(); r_surf.len()];
         Self {
-            x_surf,
+            r_surf,
             ioniz_prob,
-            x,
             t,
         }
     }
 
     pub fn save_as_hdf5(&self, path: &str) {
-        let x_surf_arr = Array1::from_vec(self.x_surf.to_vec());
-        hdf5_interface::write_to_hdf5(path, "x_surf", None, &x_surf_arr).unwrap();
+        let r_surf_arr = Array1::from_vec(self.r_surf.clone());
+        hdf5_interface::write_to_hdf5(path, "r_surf", None, &r_surf_arr).unwrap();
         hdf5_interface::write_to_hdf5(path, "t", None, &self.t).unwrap();
-        for i in 0..N {
-            let ioniz_prob_i = Array1::from_vec(self.ioniz_prob[i].to_vec());
+        let n = self.r_surf.len();
+        for i in 0..n {
+            let r_surf_current: F = r_surf_arr[i];
+            let ioniz_prob_i = Array1::from_vec(self.ioniz_prob[i].clone());
             let lenth = ioniz_prob_i.len();
             let last = ioniz_prob_i[lenth - 1];
             hdf5_interface::write_to_hdf5(
@@ -44,6 +45,13 @@ impl<const N: usize> IonizProb2D<N> {
                 path,
                 format!("ioniz_prob_{i}").as_str(),
                 None,
+                "r_surf",
+                format!("{r_surf_current}").as_str(),
+            );
+            hdf5_interface::create_str_data_attr(
+                path,
+                format!("ioniz_prob_{i}").as_str(),
+                None,
                 "last",
                 format!("{last}").as_str(),
             )
@@ -51,27 +59,60 @@ impl<const N: usize> IonizProb2D<N> {
         }
     }
 
-    pub fn add(&mut self, wf: &Array2<C>) {
-        for i in 0..N {
-            let xmin0 = self.x.grid[0][[0]];
-            let indx0 = ((self.x_surf[i] - xmin0) / self.x.dx[0]).round() as usize;
+    fn calculate_ionization_probability(&self, wf: &WaveFunction2D, r_sq: F, dv: F) -> F {
+        let x0 = wf.x.grid[0].clone();
+        let x1 = wf.x.grid[1].clone();
 
-            let xmin1 = self.x.grid[1][[0]];
-            let indx1 = ((self.x_surf[i] - xmin1) / self.x.dx[1]).round() as usize;
-            let psi_slice = wf.slice(s![indx0.., indx1..]);
-            self.ioniz_prob[i]
-                .push(psi_slice.mapv(|c| c.norm_sqr()).sum() * self.x.dx[0] * self.x.dx[1]);
+        // Маски для 1 и второго электронов
+        let calculate_mask =
+            |x: &Array1<F>, r_sq: F| Array1::from_shape_fn((x.len()), |i| x[i] * x[i] > r_sq);
+
+        let mask1 = calculate_mask(&x0, r_sq);
+        let mask2 = calculate_mask(&x1, r_sq);
+
+        // Параллельное суммирование с использованием масок
+        let total_prob: F = (0..x0.len())
+            .into_par_iter()
+            .map(|i0| {
+                let mut local_sum = 0.0;
+                // Если условие для первого электрона не выполняется, пропускаем
+                if mask1[i0] {
+                    for i1 in 0..x1.len() {
+                        // Если условие для второго электрона выполняется
+                        if mask2[i1] {
+                            local_sum += wf.psi[[i0, i1]].norm_sqr();
+                        }
+                    }
+                }
+
+                local_sum
+            })
+            .sum();
+
+        total_prob * dv
+    }
+
+    pub fn add(&mut self, wf: &WaveFunction2D) {
+        let dv = wf.x.dx[0] * wf.x.dx[1];
+
+        for (i, &r_surf_val) in self.r_surf.iter().enumerate() {
+            let r_sq = r_surf_val * r_surf_val;
+            let ioniz_prob_current = self.calculate_ionization_probability(wf, r_sq, dv);
+            self.ioniz_prob[i].push(ioniz_prob_current);
         }
     }
 
-    pub fn plot(&self, t: &Array1<F>, output_path: &str) {
+    pub fn plot(&self, output_path: &str) {
+        let t = self.t.clone(); // костыль
+
         // Создаём область для рисования
-        // let t = tspace.grid.clone();
 
         let root = BitMapBackend::new(output_path, (1024, 768)).into_drawing_area();
         root.fill(&WHITE).unwrap();
 
         let mut y_max: F = 0.0;
+
+        let N = self.r_surf.len();
         for i in 0..N {
             let max = self.ioniz_prob[i]
                 .iter()
@@ -109,7 +150,7 @@ impl<const N: usize> IonizProb2D<N> {
         ];
 
         for i in 0..N {
-            let x_surf = self.x_surf[i];
+            let x_surf = self.r_surf[i];
             let prob: Vec<f64> = self.ioniz_prob[i].iter().map(|&p| p.into()).collect();
 
             // Берем цвет из палитры с циклическим повтором

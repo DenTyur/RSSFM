@@ -275,12 +275,18 @@ impl WaveFunction<2> for WaveFunction2D {
     }
 
     fn prob_in_numerical_box(&self) -> F {
-        let volume: F = self.x.dx[0] * self.x.dx[1];
+        let volume: F = match self.representation {
+            Representation::Position => self.x.dx[0] * self.x.dx[1],
+            Representation::Momentum => self.p.dp[0] * self.p.dp[1],
+        };
         self.psi.mapv(|a| a.norm_sqr()).sum() * volume
     }
 
     fn norm(&self) -> F {
-        let volume: F = self.x.dx[0] * self.x.dx[1];
+        let volume: F = match self.representation {
+            Representation::Position => self.x.dx[0] * self.x.dx[1],
+            Representation::Momentum => self.p.dp[0] * self.p.dp[1],
+        };
         (self.psi.mapv(|a| a.norm_sqr()).sum() * volume).sqrt()
     }
 
