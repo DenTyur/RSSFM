@@ -30,22 +30,6 @@ pub struct WaveFunction1D {
 }
 
 impl WaveFunction1D {
-    pub fn save_as_hdf5(&self, path: &str) {
-        check_path!(path);
-        hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
-            .unwrap();
-        hdf5_interface::add_str_group_attr(
-            path,
-            "WaveFunction",
-            "representation",
-            self.representation.as_str(),
-        );
-        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &self.x.grid[0]).unwrap();
-        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &self.p.grid[0]).unwrap();
-    }
-}
-
-impl WaveFunction1D {
     pub const DIM: usize = 1;
 
     pub fn new(psi: Array1<C>, x: Xspace1D) -> Self {
@@ -224,6 +208,62 @@ impl ValueAndSpaceDerivatives<1> for WaveFunction1D {
 
 impl WaveFunction<1> for WaveFunction1D {
     type Xspace = Xspace1D;
+
+    fn sparse(&mut self, sparse_step: isize) {
+        let psi = self.psi.slice(s![..;sparse_step]);
+        let x_grid0_sparsed = self.x.grid[0].slice(s![..;sparse_step]).to_owned();
+        let p_grid0_sparsed = self.p.grid[0].slice(s![..;sparse_step]).to_owned();
+        self.psi = psi.to_owned();
+        self.x = Xspace1D {
+            x0: [x_grid0_sparsed[0]],
+            dx: [x_grid0_sparsed[1] - x_grid0_sparsed[0]],
+            n: [x_grid0_sparsed.len()],
+            grid: [x_grid0_sparsed],
+        };
+
+        self.p = Pspace1D {
+            p0: [p_grid0_sparsed[0]],
+            dp: [p_grid0_sparsed[1] - p_grid0_sparsed[0]],
+            n: [p_grid0_sparsed.len()],
+            grid: [p_grid0_sparsed],
+        };
+    }
+
+    fn save_sparsed_as_hdf5(&self, path: &str, sparse_step: isize) {
+        let psi = self.psi.clone();
+        let x_grid0_sparsed = self.x.grid[0].slice(s![..;sparse_step]).to_owned();
+        let p_grid0_sparsed = self.p.grid[0].slice(s![..;sparse_step]).to_owned();
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(
+            path,
+            "psi",
+            Some("WaveFunction"),
+            &psi.slice(s![..;sparse_step]),
+        )
+        .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &x_grid0_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &p_grid0_sparsed).unwrap();
+    }
+
+    fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
+            .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &self.x.grid[0]).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &self.p.grid[0]).unwrap();
+    }
 
     fn extend(&mut self, x_new: &Xspace1D) {
         // Проверяем, что шаги сетки совпадают
