@@ -14,6 +14,7 @@ use crate::utils::{heatmap, logcolormap};
 use itertools::multizip;
 use ndarray::prelude::*;
 use ndarray::Array2;
+use ndarray::ArrayBase;
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
@@ -31,6 +32,32 @@ pub struct WaveFunction2D {
 }
 
 impl WaveFunction2D {
+    pub fn save_sparsed_as_hdf5(&self, path: &str, sparse_step: isize) {
+        let psi = self.psi.clone();
+        let x_grid0_sparsed = self.x.grid[0].slice(s![..;sparse_step]).to_owned();
+        let x_grid1_sparsed = self.x.grid[1].slice(s![..;sparse_step]).to_owned();
+        let p_grid0_sparsed = self.p.grid[0].slice(s![..;sparse_step]).to_owned();
+        let p_grid1_sparsed = self.p.grid[1].slice(s![..;sparse_step]).to_owned();
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(
+            path,
+            "psi",
+            Some("WaveFunction"),
+            &psi.slice(s![..;sparse_step, ..;sparse_step]),
+        )
+        .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &x_grid0_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x1", Some("Xspace"), &x_grid1_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &p_grid0_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p1", Some("Pspace"), &p_grid1_sparsed).unwrap();
+    }
+
     pub fn save_as_hdf5(&self, path: &str) {
         check_path!(path);
         hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
@@ -275,18 +302,12 @@ impl WaveFunction<2> for WaveFunction2D {
     }
 
     fn prob_in_numerical_box(&self) -> F {
-        let volume: F = match self.representation {
-            Representation::Position => self.x.dx[0] * self.x.dx[1],
-            Representation::Momentum => self.p.dp[0] * self.p.dp[1],
-        };
+        let volume: F = self.x.dx[0] * self.x.dx[1];
         self.psi.mapv(|a| a.norm_sqr()).sum() * volume
     }
 
     fn norm(&self) -> F {
-        let volume: F = match self.representation {
-            Representation::Position => self.x.dx[0] * self.x.dx[1],
-            Representation::Momentum => self.p.dp[0] * self.p.dp[1],
-        };
+        let volume: F = self.x.dx[0] * self.x.dx[1];
         (self.psi.mapv(|a| a.norm_sqr()).sum() * volume).sqrt()
     }
 

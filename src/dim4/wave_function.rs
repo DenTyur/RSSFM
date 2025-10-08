@@ -62,6 +62,39 @@ impl WaveFunction4D {
 }
 
 impl WaveFunction4D {
+    pub fn save_sparsed_as_hdf5(&self, path: &str, sparse_step: isize) {
+        let psi = self.psi.clone();
+        let x_grid0_sparsed = self.x.grid[0].slice(s![..;sparse_step]).to_owned();
+        let x_grid1_sparsed = self.x.grid[1].slice(s![..;sparse_step]).to_owned();
+        let x_grid2_sparsed = self.x.grid[2].slice(s![..;sparse_step]).to_owned();
+        let x_grid3_sparsed = self.x.grid[3].slice(s![..;sparse_step]).to_owned();
+        let p_grid0_sparsed = self.p.grid[0].slice(s![..;sparse_step]).to_owned();
+        let p_grid1_sparsed = self.p.grid[1].slice(s![..;sparse_step]).to_owned();
+        let p_grid2_sparsed = self.p.grid[2].slice(s![..;sparse_step]).to_owned();
+        let p_grid3_sparsed = self.p.grid[3].slice(s![..;sparse_step]).to_owned();
+        check_path!(path);
+        hdf5_interface::write_to_hdf5_complex(
+            path,
+            "psi",
+            Some("WaveFunction"),
+            &psi.slice(s![..;sparse_step, ..;sparse_step, ..;sparse_step, ..;sparse_step]),
+        )
+        .unwrap();
+        hdf5_interface::add_str_group_attr(
+            path,
+            "WaveFunction",
+            "representation",
+            self.representation.as_str(),
+        );
+        hdf5_interface::write_to_hdf5(path, "x0", Some("Xspace"), &x_grid0_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x1", Some("Xspace"), &x_grid1_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x2", Some("Xspace"), &x_grid2_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "x3", Some("Xspace"), &x_grid3_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p0", Some("Pspace"), &p_grid0_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p1", Some("Pspace"), &p_grid1_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p2", Some("Pspace"), &p_grid2_sparsed).unwrap();
+        hdf5_interface::write_to_hdf5(path, "p3", Some("Pspace"), &p_grid3_sparsed).unwrap();
+    }
     pub fn save_as_hdf5(&self, path: &str) {
         check_path!(path);
         hdf5_interface::write_to_hdf5_complex(path, "psi", Some("WaveFunction"), &self.psi)
