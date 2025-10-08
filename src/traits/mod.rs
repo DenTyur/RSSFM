@@ -4,6 +4,7 @@ pub mod field;
 pub mod flow;
 pub mod space;
 pub mod ssfm;
+pub mod ssfm_in_imaginary_time;
 pub mod tsurff;
 pub mod volkov;
 pub mod wave_function;

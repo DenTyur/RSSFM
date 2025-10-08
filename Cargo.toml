@@ -7,6 +7,10 @@ readme = "README.md"
 [lib]
 name = "rssfm"
 path = "src/lib.rs"
+# ============== 1D тест мнимого времени ==========================
+[[bin]]
+name = "itm_evolution_1d"
+path = "src/out/dim1/itm_evolution/itm_evolution_1d.rs"
 
 # ======================== Расчетные бинарники ========================================
 # 2e2d br new E0035 T13

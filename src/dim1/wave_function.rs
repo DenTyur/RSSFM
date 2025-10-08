@@ -43,6 +43,25 @@ impl WaveFunction1D {
         }
     }
 
+    /// Инициализирует волновую функцию как двумерный осциллятор на основе пространственной сетки x
+    pub fn init_oscillator_1d(x: Xspace1D) -> Self {
+        let mut psi: Array<C, Ix1> = Array::zeros((x.n[0]));
+        psi.iter_mut()
+            .zip(x.grid[0].iter())
+            .for_each(|(psi_elem, x)| {
+                *psi_elem = (-0.5 * x.powi(2)).exp() + 0. * I;
+            });
+        let p = Pspace1D::init(&x);
+        let representation = Representation::Position;
+        Self {
+            psi,
+            x,
+            p,
+            dpsi_dx: None,
+            representation,
+        }
+    }
+
     /// Инициализирует пустые массивы для спектральных производных
     pub fn init_spectral_derivatives(&mut self) {
         self.dpsi_dx = Some(self.psi.clone());

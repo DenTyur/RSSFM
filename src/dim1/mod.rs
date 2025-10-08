@@ -4,5 +4,6 @@ pub mod gauge;
 pub mod ioniz_prob;
 pub mod space;
 pub mod ssfm;
+pub mod ssfm_in_imaginary_time;
 pub mod time_fft;
 pub mod wave_function;
