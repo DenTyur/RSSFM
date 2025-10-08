@@ -5,14 +5,13 @@ use crate::dim2::{space::Xspace2D, wave_function::WaveFunction2D};
 use crate::dim4::fft_maker::FftMaker4D;
 use crate::macros::check_path;
 use crate::traits::fft_maker::FftMaker;
-use crate::traits::wave_function::{ValueAndSpaceDerivatives, WaveFunction};
+use crate::traits::wave_function::{SymmetrizedProduct, ValueAndSpaceDerivatives, WaveFunction};
 use crate::utils::hdf5_interface;
 use crate::utils::logcolormap;
 use itertools::multizip;
 use ndarray::prelude::*;
-use ndarray::Array4;
 use ndarray::Ix4;
-use ndarray::Zip;
+use ndarray::{Array4, Zip};
 use ndarray_npy::{ReadNpyExt, WriteNpyError, WriteNpyExt};
 use num_complex::Complex;
 use rayon::prelude::*;
@@ -34,6 +33,51 @@ pub struct WaveFunction4D {
     pub x: Xspace4D,
     pub p: Pspace4D,
     pub representation: Representation,
+}
+
+impl SymmetrizedProduct<WaveFunction2D, WaveFunction4D> for WaveFunction4D {
+    fn new_symmetrized_product(wf1: &WaveFunction2D, wf2: &WaveFunction2D) -> Self {
+        assert_eq!(
+            wf1.representation, wf2.representation,
+            "Одноэлектронные функции в разных представлениях"
+        );
+        let representation = wf1.representation;
+
+        let n = wf1.psi.shape();
+        let m = wf2.psi.shape();
+        assert_eq!(n, m, "Волновые функции имеют разный размер");
+        let mut wf2e: Array4<C> = Array4::zeros((n[0], n[1], m[0], m[1]));
+
+        Zip::indexed(&mut wf2e).par_for_each(|(i0, i1, i2, i3), wf| {
+            let term1 = wf1.psi[[i0, i1]] * wf2.psi[[i2, i3]];
+            let term2 = wf2.psi[[i0, i1]] * wf1.psi[[i2, i3]];
+            let normer: F = 2.0;
+            *wf = (term1 + term2) / normer.sqrt();
+        });
+
+        let x = Xspace4D {
+            x0: [wf1.x.x0[0], wf1.x.x0[1], wf2.x.x0[0], wf2.x.x0[1]],
+            dx: [wf1.x.dx[0], wf1.x.dx[1], wf2.x.dx[0], wf2.x.dx[1]],
+            n: [wf1.x.n[0], wf1.x.n[1], wf2.x.n[0], wf2.x.n[1]],
+            grid: [
+                wf1.x.grid[0].clone(),
+                wf1.x.grid[1].clone(),
+                wf2.x.grid[0].clone(),
+                wf2.x.grid[1].clone(),
+            ],
+        };
+        let p = Pspace4D::init(&x);
+        Self {
+            psi: wf2e,
+            dpsi_d0: None,
+            dpsi_d1: None,
+            dpsi_d2: None,
+            dpsi_d3: None,
+            x,
+            p,
+            representation,
+        }
+    }
 }
 
 impl WaveFunction4D {

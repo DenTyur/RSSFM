@@ -10,5 +10,3 @@ pub mod time_fft;
 pub mod tsurff;
 pub mod volkov;
 pub mod wave_function;
-pub mod wave_function_processing;
-

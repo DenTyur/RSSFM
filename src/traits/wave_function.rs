@@ -19,6 +19,11 @@ pub trait ValueAndSpaceDerivatives<const D: usize> {
     fn value(&self, x: [F; D]) -> C;
 }
 
+// Трейт для симметризованного произведения
+pub trait SymmetrizedProduct<Wf_input, Wf_output> {
+    fn new_symmetrized_product(wf1: &Wf_input, wf2: &Wf_input) -> Wf_output;
+}
+
 /// Трейт для волновой функции.
 /// D задает размерность пространства.
 pub trait WaveFunction<const D: usize> {
