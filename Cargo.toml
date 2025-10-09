@@ -160,6 +160,11 @@ path = "src/bin/memory.rs"
 name = "keldysh_parameter"
 path = "src/bin/keldysh_parameter.rs"
 
+# бинарник для расчета методом мнимого времени
+[[bin]]
+name = "im_time_1d"
+path = "src/imaginary_time_evolution/dim1/main.rs"
+
 [dependencies]
 ndarray = "0.15"
 ndrustfft = "0.4.0"
@@ -173,6 +178,10 @@ colorous = "1.0.15"
 colorgrad = "0.6"
 hdf5 = "0.8.1"
 num-traits = "0.2.12"
+meval = "0.2"
+toml = "0.9.7"
+serde = "1.0.228"
+clap = "4.5.48"
 # GSL = "7.0.0"
 
 # [features]

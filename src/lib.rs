@@ -1,10 +1,10 @@
 pub mod common;
 pub mod config;
+pub mod imaginary_time_evolution;
 pub mod macros;
 pub mod potentials;
-#[cfg(test)]
-mod tests;
 pub mod utils;
+pub use config::{C, F};
 
 pub mod dim1;
 

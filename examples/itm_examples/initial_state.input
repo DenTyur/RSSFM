@@ -1,0 +1,17 @@
+[grid]
+x0 = -30.0
+dx = 0.5  
+n = 120
+
+[time]
+dt = 0.01
+max_steps = 500
+
+[wave_function]
+formula = "exp(-x^2)"
+
+[potential]
+formula = "-1/sqrt(x^2+1)"
+
+[output]
+prefix = "./output"
