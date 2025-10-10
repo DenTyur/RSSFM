@@ -2,12 +2,11 @@ use rssfm::common::particle::Particle;
 use rssfm::common::tspace::Tspace;
 use rssfm::dim1::{space::Xspace1D, wave_function::WaveFunction1D};
 use rssfm::potentials::{absorbing_potentials::absorbing_potential_1d, potentials};
-use rssfm::traits::wave_function::WaveFunction;
 use rssfm::F;
 
 fn main() {
-    let out_prefix = ".";
-    let psi_path = "psi_initial.hdf5";
+    // let out_prefix = ".";
+    // let psi_path = "psi_initial.hdf5";
 
     let mut t = Tspace::new(0., 0.01, 50, 500);
 
@@ -24,8 +23,9 @@ fn main() {
     };
     let particles = [electron1];
 
-    psi.evol_in_imag_time(&particles, atomic_pot, abs_pot, &mut t);
+    let energy_tol: F = 1e-5;
+    psi.evol_in_imag_time(&particles, atomic_pot, abs_pot, &mut t, energy_tol);
 
-    psi.normalization_by_1();
-    psi.save_as_hdf5(format!("{}/{}", out_prefix, psi_path).as_str());
+    // psi.normalization_by_1();
+    // psi.save_as_hdf5(format!("{}/{}", out_prefix, psi_path).as_str());
 }

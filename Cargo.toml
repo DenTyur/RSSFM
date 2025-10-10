@@ -160,10 +160,15 @@ path = "src/bin/memory.rs"
 name = "keldysh_parameter"
 path = "src/bin/keldysh_parameter.rs"
 
-# бинарник для расчета методом мнимого времени
+# ========== Бинарники для тестов эволюции в мнимом времени =========================
+
 [[bin]]
-name = "im_time_1d"
-path = "src/imaginary_time_evolution/dim1/main.rs"
+name = "test_imag_time_1d"
+path = "src/imaginary_time_evolution/dim1/tests.rs"
+
+[[bin]]
+name = "test_imag_time_2d"
+path = "src/imaginary_time_evolution/dim2/tests.rs"
 
 [dependencies]
 ndarray = "0.15"

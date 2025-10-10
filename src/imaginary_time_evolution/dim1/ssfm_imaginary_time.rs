@@ -4,23 +4,27 @@ use crate::config::{C, F};
 use crate::dim1::{fft_maker::FftMaker1D, space::Xspace1D, wave_function::WaveFunction1D};
 use crate::traits::fft_maker::FftMaker;
 use crate::traits::ssfm_imaginary_time::SSFM_ImaginaryTime;
-use crate::traits::wave_function::WaveFunction;
 use itertools::multizip;
 use rayon::prelude::*;
 
-pub struct SSFM1D_ImaginaryTime<'a> {
+#[allow(non_camel_case_types)]
+pub struct SSFM1D_ImaginaryTime<'a, AP, AB> {
     particles: &'a [Particle],
-    potential: fn([F; 1]) -> F,
-    absorbing_potential: fn([F; 1]) -> C,
+    potential: AP,
+    absorbing_potential: AB,
     fft_maker: FftMaker1D,
 }
 
-impl<'a> SSFM1D_ImaginaryTime<'a> {
+impl<'a, AP, AB> SSFM1D_ImaginaryTime<'a, AP, AB>
+where
+    AP: Fn([F; 1]) -> F + Send + Sync,
+    AB: Fn([F; 1]) -> C + Send + Sync,
+{
     pub fn new(
         particles: &'a [Particle],
         x: &Xspace1D,
-        potential: fn([F; 1]) -> F,
-        absorbing_potential: fn([F; 1]) -> C,
+        potential: AP,
+        absorbing_potential: AB,
     ) -> Self {
         let fft_maker = FftMaker1D::new(&x.n);
         Self {
@@ -30,14 +34,23 @@ impl<'a> SSFM1D_ImaginaryTime<'a> {
             absorbing_potential,
         }
     }
+}
+
+/// Реализация эволюции на временной шаг методом SSFM
+impl<'a, AP, AB> SSFM_ImaginaryTime<1, AP, AB> for SSFM1D_ImaginaryTime<'a, AP, AB>
+where
+    AP: Fn([F; 1]) -> F + Send + Sync,
+    AB: Fn([F; 1]) -> C + Send + Sync,
+{
+    type WF = WaveFunction1D;
 
     fn x_evol_half(
         &self,
-        particles: &[Particle],
+        _particles: &[Particle],
         wf: &mut WaveFunction1D,
         dt: F,
-        potential: fn(x: [F; 1]) -> F,
-        absorbing_potential: fn(x: [F; 1]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     ) {
         multizip((wf.psi.iter_mut(), wf.x.grid[0].iter()))
             .par_bridge()
@@ -50,11 +63,11 @@ impl<'a> SSFM1D_ImaginaryTime<'a> {
 
     fn x_evol(
         &self,
-        particles: &[Particle],
+        _particles: &[Particle],
         wf: &mut WaveFunction1D,
         dt: F,
-        potential: fn(x: [F; 1]) -> F,
-        absorbing_potential: fn(x: [F; 1]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     ) {
         multizip((wf.psi.iter_mut(), wf.x.grid[0].iter()))
             .par_bridge()
@@ -73,11 +86,6 @@ impl<'a> SSFM1D_ImaginaryTime<'a> {
                 *psi_elem *= (-dt * (0.5 / m * px * px)).exp();
             });
     }
-}
-
-/// Реализация эволюции на временной шаг методом SSFM
-impl<'a> SSFM_ImaginaryTime for SSFM1D_ImaginaryTime<'a> {
-    type WF = WaveFunction1D;
 
     fn time_step_evol(&mut self, wf: &mut WaveFunction1D, t: &mut Tspace) {
         self.fft_maker.modify_psi(wf);
@@ -85,8 +93,8 @@ impl<'a> SSFM_ImaginaryTime for SSFM1D_ImaginaryTime<'a> {
             self.particles,
             wf,
             t.dt,
-            self.potential,
-            self.absorbing_potential,
+            &self.potential,
+            &self.absorbing_potential,
         );
 
         for _i in 0..t.n_steps - 1 {
@@ -98,8 +106,8 @@ impl<'a> SSFM_ImaginaryTime for SSFM1D_ImaginaryTime<'a> {
                 self.particles,
                 wf,
                 t.dt,
-                self.potential,
-                self.absorbing_potential,
+                &self.potential,
+                &self.absorbing_potential,
             );
             t.current += t.dt;
         }
@@ -112,8 +120,8 @@ impl<'a> SSFM_ImaginaryTime for SSFM1D_ImaginaryTime<'a> {
             self.particles,
             wf,
             t.dt,
-            self.potential,
-            self.absorbing_potential,
+            &self.potential,
+            &self.absorbing_potential,
         );
         self.fft_maker.demodify_psi(wf);
         t.current += t.dt;
