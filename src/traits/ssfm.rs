@@ -3,7 +3,11 @@ use crate::common::tspace::Tspace;
 use crate::config::{C, F};
 
 /// Трейт для операторов эволюции для SSFM в разных калибровках для одной частицы
-pub trait GaugedEvolutionSSFM<const D: usize> {
+pub trait GaugedEvolutionSSFM<const D: usize, AP, AB>
+where
+    AP: Fn([F; D]) -> F + Send + Sync, // функция для атомного потенциала
+    AB: Fn([F; D]) -> C + Send + Sync,
+{
     type WF;
 
     /// Действите оператором эволюции в координатном пространстве
@@ -14,8 +18,8 @@ pub trait GaugedEvolutionSSFM<const D: usize> {
         psi: &mut Self::WF,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; D]) -> F,
-        absorbing_potential: fn(x: [F; D]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     );
 
     /// Действите оператором эволюции в координатном пространстве
@@ -26,8 +30,8 @@ pub trait GaugedEvolutionSSFM<const D: usize> {
         psi: &mut Self::WF,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; D]) -> F,
-        absorbing_potential: fn(x: [F; D]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     );
 
     /// Действите оператором эволюции в импульсном пространстве
@@ -35,7 +39,11 @@ pub trait GaugedEvolutionSSFM<const D: usize> {
 }
 
 /// Трейт для операторов эволюции для SSFM в разных калибровках для двух частиц
-pub trait GaugedEvolutionSSFMtwoParticles<const D: usize> {
+pub trait GaugedEvolutionSSFMtwoParticles<const D: usize, AP, AB>
+where
+    AP: Fn([F; D]) -> F + Send + Sync, // функция для атомного потенциала
+    AB: Fn([F; D]) -> C + Send + Sync,
+{
     // D -- полная размерность
     type WF;
 
@@ -47,8 +55,8 @@ pub trait GaugedEvolutionSSFMtwoParticles<const D: usize> {
         psi: &mut Self::WF,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; D]) -> F,
-        absorbing_potential: fn(x: [F; D]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     );
 
     /// Действите оператором эволюции в координатном пространстве
@@ -59,8 +67,8 @@ pub trait GaugedEvolutionSSFMtwoParticles<const D: usize> {
         psi: &mut Self::WF,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; D]) -> F,
-        absorbing_potential: fn(x: [F; D]) -> C,
+        potential: &AP,
+        absorbing_potential: &AB,
     );
 
     /// Действите оператором эволюции в импульсном пространстве

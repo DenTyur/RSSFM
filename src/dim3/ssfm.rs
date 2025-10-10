@@ -8,27 +8,31 @@ use crate::traits::fft_maker::FftMaker;
 use crate::traits::ssfm::{GaugedEvolutionSSFM, SSFM};
 use crate::traits::wave_function::WaveFunction;
 
-pub struct SSFM3D<'a, G>
+pub struct SSFM3D<'a, G, AP, AB>
 where
-    G: GaugedEvolutionSSFM<3, WF = WaveFunction3D>,
+    AP: Fn([F; 3]) -> F + Send + Sync,
+    AB: Fn([F; 3]) -> C + Send + Sync,
+    G: GaugedEvolutionSSFM<3, AP, AB, WF = WaveFunction3D>,
 {
     particles: &'a [Particle],
-    potential: fn([F; 3]) -> F,
-    absorbing_potential: fn([F; 3]) -> C,
+    potential: AP,           // Изменено с fn на AP
+    absorbing_potential: AB, // Изменено с fn на AB
     gauge: &'a G,
     fft_maker: FftMaker3D,
 }
 
-impl<'a, G> SSFM3D<'a, G>
+impl<'a, G, AP, AB> SSFM3D<'a, G, AP, AB>
 where
-    G: GaugedEvolutionSSFM<3, WF = WaveFunction3D>,
+    AP: Fn([F; 3]) -> F + Send + Sync,
+    AB: Fn([F; 3]) -> C + Send + Sync,
+    G: GaugedEvolutionSSFM<3, AP, AB, WF = WaveFunction3D>,
 {
     pub fn new(
         particles: &'a [Particle],
         gauge: &'a G,
         x: &Xspace3D,
-        potential: fn([F; 3]) -> F,
-        absorbing_potential: fn([F; 3]) -> C,
+        potential: AP,           // Изменен тип параметра
+        absorbing_potential: AB, // Изменен тип параметра
     ) -> Self {
         let fft_maker = FftMaker3D::new(&x.n);
         Self {
@@ -42,9 +46,11 @@ where
 }
 
 /// Реализация эволюции на временной шаг методом SSFM
-impl<'a, G> SSFM for SSFM3D<'a, G>
+impl<'a, G, AP, AB> SSFM for SSFM3D<'a, G, AP, AB>
 where
-    G: GaugedEvolutionSSFM<3, WF = WaveFunction3D>,
+    AP: Fn([F; 3]) -> F + Send + Sync,
+    AB: Fn([F; 3]) -> C + Send + Sync,
+    G: GaugedEvolutionSSFM<3, AP, AB, WF = WaveFunction3D>,
 {
     type WF = WaveFunction3D;
 
@@ -52,7 +58,6 @@ where
         &mut self,
         wf: &mut WaveFunction3D,
         t: &mut Tspace,
-        // psi_p_save_path: Option<(&str, isize, &str, [F; 2])>,
         momentum_representation_callback: Option<&mut dyn FnMut(&WaveFunction3D, &Tspace)>,
     ) {
         self.fft_maker.modify_psi(wf);
@@ -61,8 +66,8 @@ where
             wf,
             t.current,
             t.dt,
-            self.potential,
-            self.absorbing_potential,
+            &self.potential,           // Добавлен &
+            &self.absorbing_potential, // Добавлен &
         );
 
         for _i in 0..t.n_steps - 1 {
@@ -75,8 +80,8 @@ where
                 wf,
                 t.current,
                 t.dt,
-                self.potential,
-                self.absorbing_potential,
+                &self.potential,           // Добавлен &
+                &self.absorbing_potential, // Добавлен &
             );
             t.current += t.dt;
         }
@@ -88,19 +93,15 @@ where
         if let Some(callback) = momentum_representation_callback {
             callback(wf, t);
         }
-        // if let Some(path) = psi_p_save_path {
-        //     // график волновой функции
-        //     wf.save_sparsed_as_npy(path.0, path.1).unwrap();
-        //     // wf.plot_log(path.1, path.2);
-        // }
+
         self.fft_maker.do_ifft(wf);
         self.gauge.x_evol_half(
             self.particles,
             wf,
             t.current,
             t.dt,
-            self.potential,
-            self.absorbing_potential,
+            &self.potential,           // Добавлен &
+            &self.absorbing_potential, // Добавлен &
         );
         self.fft_maker.demodify_psi(wf);
         t.current += t.dt;

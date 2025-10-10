@@ -26,17 +26,22 @@ impl<'a, Field2D: Field<2>> VelocityGauge2D<'a, Field2D> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке скорости для одной двумерной частицы
-impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for VelocityGauge2D<'a, Field2D> {
+impl<'a, Field2D, AP, AB> GaugedEvolutionSSFM<2, AP, AB> for VelocityGauge2D<'a, Field2D>
+where
+    Field2D: Field<2>,
+    AP: Fn([F; 2]) -> F + Send + Sync,
+    AB: Fn([F; 2]) -> C + Send + Sync,
+{
     type WF = WaveFunction2D;
 
     fn x_evol_half(
         &self,
-        _particle: &[Particle],
+        _particles: &[Particle],
         wf: &mut WaveFunction2D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -58,8 +63,8 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for VelocityGauge2D<'a, Field
         wf: &mut WaveFunction2D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -99,17 +104,22 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for VelocityGauge2D<'a, Field
 }
 
 /// Эволюция для SSFM в калибровке скорости для двух одномерных частиц
-impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<2> for VelocityGauge1D<'a, Field1D> {
+impl<'a, Field1D, AP, AB> GaugedEvolutionSSFM<2, AP, AB> for VelocityGauge1D<'a, Field1D>
+where
+    Field1D: Field<1>,
+    AP: Fn([F; 2]) -> F + Send + Sync,
+    AB: Fn([F; 2]) -> C + Send + Sync,
+{
     type WF = WaveFunction2D;
 
     fn x_evol_half(
         &self,
-        _particle: &[Particle],
+        _particles: &[Particle],
         wf: &mut WaveFunction2D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -131,8 +141,8 @@ impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<2> for VelocityGauge1D<'a, Field
         wf: &mut WaveFunction2D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -190,7 +200,12 @@ impl<'a, Field2D: Field<2>> LenthGauge2D<'a, Field2D> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке длины для одной двумерной частицы Поле 2D
-impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for LenthGauge2D<'a, Field2D> {
+impl<'a, Field2D, AP, AB> GaugedEvolutionSSFM<2, AP, AB> for LenthGauge2D<'a, Field2D>
+where
+    Field2D: Field<2>,
+    AP: Fn([F; 2]) -> F + Send + Sync,
+    AB: Fn([F; 2]) -> C + Send + Sync,
+{
     type WF = WaveFunction2D;
 
     fn x_evol_half(
@@ -199,8 +214,8 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for LenthGauge2D<'a, Field2D>
         wf: &mut WaveFunction2D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -229,8 +244,8 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for LenthGauge2D<'a, Field2D>
         wf: &mut WaveFunction2D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -268,7 +283,12 @@ impl<'a, Field2D: Field<2>> GaugedEvolutionSSFM<2> for LenthGauge2D<'a, Field2D>
 }
 
 /// Эволюция для SSFM в калибровке длины для двух одномерных частиц Поле 1D
-impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<2> for LenthGauge1D<'a, Field1D> {
+impl<'a, Field1D, AP, AB> GaugedEvolutionSSFM<2, AP, AB> for LenthGauge1D<'a, Field1D>
+where
+    Field1D: Field<1>,
+    AP: Fn([F; 2]) -> F + Send + Sync,
+    AB: Fn([F; 2]) -> C + Send + Sync,
+{
     type WF = WaveFunction2D;
 
     fn x_evol_half(
@@ -277,8 +297,8 @@ impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<2> for LenthGauge1D<'a, Field1D>
         wf: &mut WaveFunction2D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -309,8 +329,8 @@ impl<'a, Field1D: Field<1>> GaugedEvolutionSSFM<2> for LenthGauge1D<'a, Field1D>
         wf: &mut WaveFunction2D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 2]) -> F,
-        absorbing_potential: fn(x: [F; 2]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()

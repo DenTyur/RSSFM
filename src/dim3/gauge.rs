@@ -25,7 +25,12 @@ impl<'a, Field3D: Field<3>> VelocityGauge3D<'a, Field3D> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке скорости
-impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field3D> {
+impl<'a, Field3D, AP, AB> GaugedEvolutionSSFM<3, AP, AB> for VelocityGauge3D<'a, Field3D>
+where
+    Field3D: Field<3>,
+    AP: Fn([F; 3]) -> F + Send + Sync,
+    AB: Fn([F; 3]) -> C + Send + Sync,
+{
     type WF = WaveFunction3D;
 
     fn x_evol_half(
@@ -34,8 +39,8 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
         wf: &mut WaveFunction3D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 3]) -> F,
-        absorbing_potential: fn(x: [F; 3]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -63,8 +68,8 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for VelocityGauge3D<'a, Field
         wf: &mut WaveFunction3D,
         _tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 3]) -> F,
-        absorbing_potential: fn(x: [F; 3]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -130,7 +135,12 @@ impl<'a, Field3D: Field<3>> LenthGauge3D<'a, Field3D> {
 
 //=====================================SSFM========================================
 /// Эволюция для SSFM в калибровке длины
-impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D> {
+impl<'a, Field3D, AP, AB> GaugedEvolutionSSFM<3, AP, AB> for LenthGauge3D<'a, Field3D>
+where
+    Field3D: Field<3>,
+    AP: Fn([F; 3]) -> F + Send + Sync,
+    AB: Fn([F; 3]) -> C + Send + Sync,
+{
     type WF = WaveFunction3D;
 
     fn x_evol_half(
@@ -139,8 +149,8 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
         wf: &mut WaveFunction3D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 3]) -> F,
-        absorbing_potential: fn(x: [F; 3]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -177,8 +187,8 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
         wf: &mut WaveFunction3D,
         tcurrent: F,
         dt: F,
-        potential: fn(x: [F; 3]) -> F,
-        absorbing_potential: fn(x: [F; 3]) -> C,
+        potential: &AP,           // Изменено на &AP
+        absorbing_potential: &AB, // Изменено на &AB
     ) {
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.x.grid[0].iter()))
             .par_bridge()
@@ -208,7 +218,7 @@ impl<'a, Field3D: Field<3>> GaugedEvolutionSSFM<3> for LenthGauge3D<'a, Field3D>
             });
     }
 
-    fn p_evol(&self, particles: &[Particle], wf: &mut WaveFunction3D, tcurrent: F, dt: F) {
+    fn p_evol(&self, particles: &[Particle], wf: &mut WaveFunction3D, _tcurrent: F, dt: F) {
         let m = particles[0].mass;
         multizip((wf.psi.axis_iter_mut(Axis(0)), wf.p.grid[0].iter()))
             .par_bridge()
