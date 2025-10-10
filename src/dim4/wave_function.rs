@@ -103,6 +103,35 @@ impl WaveFunction4D {
         self.dpsi_d2 = Some(self.psi.clone());
         self.dpsi_d3 = Some(self.psi.clone());
     }
+
+    /// Инициализирует волновую функцию как 4D осциллятор на основе пространственной сетки x
+    pub fn init_oscillator_4d(x: Xspace4D) -> Self {
+        let mut psi: Array<C, Ix4> = Array::zeros((x.n[0], x.n[1], x.n[2], x.n[3]));
+        psi.indexed_iter_mut()
+            .par_bridge()
+            .for_each(|((i0, i1, i2, i3), psi)| {
+                let x0 = x.grid[0][i0];
+                let x1 = x.grid[1][i1];
+                let x2 = x.grid[2][i2];
+                let x3 = x.grid[3][i3];
+                *psi = (-0.5 * (x0.powi(2) + x1.powi(2) + x2.powi(2) + x3.powi(2)))
+                    .exp()
+                    .into();
+            });
+
+        let p = Pspace4D::init(&x);
+        let representation = Representation::Position;
+        Self {
+            psi,
+            x,
+            p,
+            dpsi_d0: None,
+            dpsi_d1: None,
+            dpsi_d2: None,
+            dpsi_d3: None,
+            representation,
+        }
+    }
 }
 
 // Работа с центром масс
