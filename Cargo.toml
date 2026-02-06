@@ -7,6 +7,17 @@ readme = "README.md"
 [lib]
 name = "rssfm"
 path = "src/lib.rs"
+#========== Тест purity ===============
+[[bin]]
+name = "br_2e1d_purity"
+path = "src/out/br_linear_polarization_T40_2e1d/dim1/int_2e1d/br_2e1d_purity.rs"
+
+
+# ============== 1D recolliding ==========================
+[[bin]]
+name = "recol_1d"
+path = "src/out/recolliding/recol_1d.rs"
+
 # ============== 1D тест мнимого времени ==========================
 [[bin]]
 name = "itm_evolution_1d"
@@ -191,6 +202,9 @@ meval = "0.2"
 toml = "0.9.7"
 serde = "1.0.228"
 clap = "4.5.48"
+
+
+ndarray-linalg = { version = "0.15", features = ["openblas-static"] }
 # GSL = "7.0.0"
 
 # [features]

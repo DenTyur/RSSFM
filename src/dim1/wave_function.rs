@@ -62,6 +62,26 @@ impl WaveFunction1D {
         }
     }
 
+    pub fn init_gauss_1d(x: Xspace1D, x0: F, p0: F, sigma: F) -> Self {
+        let normer: F = (2.0 * PI * sigma * sigma).powf(-1.0 / 4.0);
+        let mut psi: Array<C, Ix1> = Array::zeros(x.n[0]);
+        psi.iter_mut()
+            .zip(x.grid[0].iter())
+            .for_each(|(psi_elem, x)| {
+                *psi_elem =
+                    normer * (-(x - x0).powi(2) / (4.0 * sigma * sigma) + I * p0 * (x - x0)).exp();
+            });
+        let p = Pspace1D::init(&x);
+        let representation = Representation::Position;
+        Self {
+            psi,
+            x,
+            p,
+            dpsi_dx: None,
+            representation,
+        }
+    }
+
     /// Инициализирует пустые массивы для спектральных производных
     pub fn init_spectral_derivatives(&mut self) {
         self.dpsi_dx = Some(self.psi.clone());
