@@ -4,6 +4,7 @@ pub mod flow;
 pub mod gauge;
 pub mod ioniz_prob;
 pub mod purity;
+pub mod purity_diagnostics;
 pub mod single_ioniz_prob;
 pub mod space;
 pub mod ssfm;

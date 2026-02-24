@@ -1,6 +1,68 @@
 use crate::config::{F, PI};
 use crate::traits::field::Field;
 
+pub struct RampedConstantField1D {
+    pub amplitude: F,
+    pub ramp_time: F,
+}
+
+impl RampedConstantField1D {
+    pub fn new(amplitude: F, ramp_time: F) -> Self {
+        Self {
+            amplitude,
+            ramp_time,
+        }
+    }
+
+    /// Электрическое поле в момент времени t
+    pub fn electric_field_time_dependence(&self, t: F) -> F {
+        if t < 0.0 {
+            0.0
+        } else if t <= self.ramp_time {
+            self.amplitude * (t / self.ramp_time)
+        } else {
+            self.amplitude
+        }
+    }
+
+    /// Пространственная огибающая (для однородного поля равна 1)
+    pub fn field_x_envelop(&self, _x: F) -> F {
+        1.0
+    }
+
+    /// Интеграл от пространственной огибающей (для потенциала)
+    /// Возвращает x, чтобы scalar_potential = -E(t) * x
+    pub fn integrated_field_x_envelop(&self, x: F) -> F {
+        x
+    }
+
+    /// Электрическое поле как функция t и x (однородное)
+    pub fn electric_field(&self, t: F, x: F) -> [F; 1] {
+        [self.electric_field_time_dependence(t) * self.field_x_envelop(x)]
+    }
+}
+
+impl Field<1> for RampedConstantField1D {
+    fn vector_potential(&self, _t: F) -> [F; 1] {
+        [0.0]
+    }
+
+    fn scalar_potential(&self, x: [F; 1], t: F) -> F {
+        let x_point = x[0];
+        let time_part = self.electric_field_time_dependence(t);
+        let space_part = self.integrated_field_x_envelop(x_point);
+        -time_part * space_part
+    }
+
+    fn a(&self, _t: F) -> [F; 1] {
+        [0.0]
+    }
+
+    fn b(&self, _t: F) -> F {
+        0.0
+    }
+}
+
 /// Постоянное поле
 pub struct ConstantField1D {
     pub amplitude: F,
@@ -27,7 +89,7 @@ impl ConstantField1D {
     }
 
     pub fn integrated_field_x_envelop(&self, x: F) -> F {
-        x
+        -x
     }
 
     pub fn electric_field(&self, t: F, x: F) -> [F; 1] {
