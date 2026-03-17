@@ -1,11 +1,10 @@
 use crate::common::tspace::Tspace;
 use crate::config::{C, F, PI};
-use crate::dim1::{
-    fft_maker::FftMaker1D, space::Xspace1D,
-    wave_function::WaveFunction1D,
-};
+use crate::dim1::{fft_maker::FftMaker1D, space::Xspace1D, wave_function::WaveFunction1D};
+use crate::macros::check_path;
 use crate::traits::fft_maker::FftMaker;
 use crate::traits::tsurff::Tsurff;
+use crate::utils::hdf5_interface;
 use ndarray::prelude::*;
 use plotters::prelude::*;
 use rayon::prelude::*;
@@ -46,6 +45,14 @@ impl TimeFFT {
             psi_fft,
         }
     }
+
+    pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
+        hdf5_interface::write_to_hdf5(path, "t", None, &self.t.grid).unwrap();
+        hdf5_interface::write_to_hdf5(path, "energy", None, &self.energy).unwrap();
+        hdf5_interface::write_to_hdf5_complex(path, "psi_fft", None, &self.psi_fft).unwrap();
+    }
+
     pub fn add_psi_in_point(&mut self, wf: &WaveFunction1D) {
         self.psi_in_point.push(wf.psi[self.ind_point[0]]);
     }
@@ -98,7 +105,7 @@ impl TimeFFT {
         self.energy[[max_index]]
     }
 
-    pub fn plot_log(&self, file_path: &str) {
+    pub fn plot_log(&self, file_path: &str, energy_limits: [F; 2]) {
         let x_values = self.energy.clone();
         let mut psi_norm_sq: Array1<F> = Array::zeros(self.t.nt);
 
@@ -115,8 +122,8 @@ impl TimeFFT {
         root.fill(&WHITE).unwrap();
 
         // Находим минимальное и максимальное значения для осей
-        let x_min = x_values[[0]];
-        let x_max = x_values[[x_values.len() - 1]];
+        let x_min = energy_limits[0]; // x_values[[0]];
+        let x_max = energy_limits[1]; // x_values[[x_values.len() - 1]];
 
         // Для логарифмической оси y находим диапазон значений (исключаем нули и отрицательные)
         let y_min = psi_norm_sq

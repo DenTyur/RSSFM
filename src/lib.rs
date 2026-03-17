@@ -1,5 +1,6 @@
 pub mod common;
 pub mod config;
+pub mod crank_nicolson;
 pub mod imaginary_time_evolution;
 pub mod macros;
 pub mod potentials;

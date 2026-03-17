@@ -4,11 +4,31 @@ version = "0.1.0"
 edition = "2021"
 readme = "README.md"
 
+[package.metadata.docs.rs]
+rustdoc-args = ["--html-in-header", "katex-header.html"]
+
 [lib]
 name = "rssfm"
 path = "src/lib.rs"
 
+#=============== Crank-Nicolson 1d =======================
+[[bin]]
+name = "test_crank_nicolson_1d"
+path = "src/out/crank_nicolson/test_crank_nicolson_1d.rs"
+
+[[bin]]
+name = "CN_br_1e1d_external_ioniz_rate"
+path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_external_rates/CN_br_1e1d_external_ioniz_rate.rs"
+
+[[bin]]
+name = "CN_br_1e1d_inner_ioniz_rate"
+path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_inner_rates/CN_br_1e1d_inner_ioniz_rate.rs"
+
 #================ для скоростных уравнений 24 02 26 ====================
+[[bin]]
+name = "br_1e1d_external_RE_T40_E0035"
+path = "src/out/br_ionization_rate/external_T40_E=0.035/br_1e1d_external_RE_T40_E0035.rs"
+
 [[bin]]
 name = "br_1e1d_inner_RE_T40_E0035"
 path = "src/out/br_ionization_rate/inner_T40_E=0.035/br_1e1d_inner_RE_T40_E0035.rs"

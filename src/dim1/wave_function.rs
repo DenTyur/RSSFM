@@ -87,7 +87,8 @@ impl WaveFunction1D {
         self.dpsi_dx = Some(self.psi.clone());
     }
 
-    pub fn plot_log(&self, file_path: &str) {
+    pub fn plot_log(&self, file_path: &str, limits: [F; 2]) {
+        check_path!(file_path);
         let x_values = self.x.grid[0].clone();
         let mut psi_norm_sq: Array1<F> = Array::zeros(self.x.n[0]);
 
@@ -107,16 +108,19 @@ impl WaveFunction1D {
         let x_max = x_values[[self.x.n[0] - 1]];
 
         // Для логарифмической оси y находим диапазон значений (исключаем нули и отрицательные)
-        let y_min = psi_norm_sq
-            .iter()
-            .filter(|&&y| y > 0.0)
-            .fold(F::INFINITY, |a, &b| a.min(b))
-            .log10();
-        let y_max = psi_norm_sq
-            .iter()
-            .filter(|&&y| y > 0.0)
-            .fold(F::NEG_INFINITY, |a, &b| a.max(b))
-            .log10();
+        // let y_min = psi_norm_sq
+        //     .iter()
+        //     .filter(|&&y| y > 0.0)
+        //     .fold(F::INFINITY, |a, &b| a.min(b))
+        //     .log10();
+        // let y_max = psi_norm_sq
+        //     .iter()
+        //     .filter(|&&y| y > 0.0)
+        //     .fold(F::NEG_INFINITY, |a, &b| a.max(b))
+        //     .log10();
+
+        let x_range = x_min..x_max;
+        let y_range = (limits[0].log10())..(limits[1].log10());
 
         // Создаем график с линейной осью x и логарифмической осью y
         let mut chart = ChartBuilder::on(&root)
@@ -124,7 +128,7 @@ impl WaveFunction1D {
             .margin(10)
             .x_label_area_size(60)
             .y_label_area_size(40)
-            .build_cartesian_2d(x_min..x_max, y_min..y_max)
+            .build_cartesian_2d(x_range, y_range)
             .unwrap();
 
         // Настраиваем ось y как логарифмическую
@@ -181,10 +185,10 @@ impl WaveFunction1D {
 
         // Добавляем 10% отличия по краям для лучшего отображения
         // let x_padding = (x_range.end - x_range.start) * 0.1;
-        let y_padding = (limits[0] - limits[1]) * 0.1;
+        // let y_padding = (limits[0] - limits[1]) * 0.1;
 
         let x_range = x_range.start..x_range.end;
-        let y_range = (limits[0] - y_padding)..(limits[1] + y_padding);
+        let y_range = limits[0]..limits[1];
 
         // Создаём график
         let mut chart = ChartBuilder::on(&root)

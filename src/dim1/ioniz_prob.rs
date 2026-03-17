@@ -1,5 +1,6 @@
 use super::{space::Xspace1D, wave_function::WaveFunction1D};
 use crate::common::tspace::Tspace;
+use crate::macros::check_path;
 use crate::traits::wave_function::WaveFunction;
 use crate::utils::hdf5_interface;
 use ndarray::prelude::*;
@@ -100,6 +101,7 @@ impl IonizProb1D {
     }
 
     pub fn save_as_hdf5(&self, path: &str) {
+        check_path!(path);
         let x_surf_arr = Array1::from_vec(self.x_surf.to_vec());
         hdf5_interface::write_to_hdf5(path, "x_surf", None, &x_surf_arr).unwrap();
         hdf5_interface::write_to_hdf5(path, "t", None, &self.t).unwrap();
