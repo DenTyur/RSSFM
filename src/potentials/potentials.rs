@@ -77,12 +77,12 @@ pub fn soft_coulomb_2d(x: [F; 2], z: F, a: F) -> F {
 }
 
 /// soft_coulomb_2e1d
-pub fn soft_coulomb_2e1d(x: [F; 2], b: F) -> F {
-    let a: F = 3.15;
-    // let b: F = ;
-    -1.0 / (x[0].powi(2) + a.powi(2)).sqrt() - 1.0 / (x[1].powi(2) + a.powi(2)).sqrt()
-        + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
-}
+// pub fn soft_coulomb_2e1d(x: [F; 2], b: F) -> F {
+//     let a: F = 3.15;
+//     // let b: F = ;
+//     -1.0 / (x[0].powi(2) + a.powi(2)).sqrt() - 1.0 / (x[1].powi(2) + a.powi(2)).sqrt()
+//         + 1.0 / ((x[1] - x[0]).powi(2) + b.powi(2)).sqrt()
+// }
 
 pub fn soft_coulomb_2e1d_e0_10_1159_eV(x: [F; 2]) -> F {
     let a: F = 3.15;

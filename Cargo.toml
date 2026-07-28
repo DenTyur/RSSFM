@@ -11,6 +11,20 @@ rustdoc-args = ["--html-in-header", "katex-header.html"]
 name = "rssfm"
 path = "src/lib.rs"
 
+# ============= br for pra =====================
+[[bin]]
+name = "br2e1d_E0035_T4"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=4/br2e1d_E0035_T4.rs"
+
+[[bin]]
+name = "br2e1d_E0035_T13"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=13/br2e1d_E0035_T13.rs"
+
+# ============ He 1e2d inner =======================
+[[bin]]
+name = "He_1e2d_inner"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He/1e2d_inner/He_1e2d_inner.rs"
+
 #=============== Crank-Nicolson 1d =======================
 [[bin]]
 name = "test_crank_nicolson_1d"
@@ -194,9 +208,9 @@ ndarray-linalg = { version = "0.15", features = ["openblas-static"] }
 # path = "src/out/dim1/main1d.rs"
 #
 # # начальное состояние 2d
-# [[bin]]
-# name = "init_state2d"
-# path = "src/out/dim2/init_state/init_state2d.rs"
+[[bin]]
+name = "init_state2d"
+path = "src/out/dim2/init_state/init_state2d.rs"
 #
 # # 1e2d ионизация 2d
 # [[bin]]
