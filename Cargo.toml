@@ -11,41 +11,239 @@ rustdoc-args = ["--html-in-header", "katex-header.html"]
 name = "rssfm"
 path = "src/lib.rs"
 
-# ============= br for pra =====================
+# ============= Xe 2e1d T = 40 fs E = 0.06 for answer to Referee D =====================
+# 2e1dint
 [[bin]]
-name = "br2e1d_E0035_T4"
-path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=4/br2e1d_E0035_T4.rs"
+name = "Xe_2e1d_int_T40"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T40_2e1d/dim1/int_2e1d/Xe_2e1d_int_T40.rs"
+
+# 1e1d inner
+[[bin]]
+name = "Xe_1e1d_inner_T40"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T40_2e1d/dim1/inner/Xe_1e1d_inner_T40.rs"
+
+# 1e1d external
+[[bin]]
+name = "Xe_1e1d_external_T40"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T40_2e1d/dim1/external/Xe_1e1d_external_T40.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "Xe_2e1d_sym_nonint_wf_T40"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T40_2e1d/dim1/sym_nonint_wf2e1d/Xe_2e1d_sym_nonint_wf_T40.rs"
+
+# ============= Xe 2e1d T = 20 fs E = 0.06 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "Xe_2e1d_int_T20"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T20_2e1d/dim1/int_2e1d/Xe_2e1d_int_T20.rs"
+
+# 1e1d inner
+[[bin]]
+name = "Xe_1e1d_inner_T20"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T20_2e1d/dim1/inner/Xe_1e1d_inner_T20.rs"
+
+# 1e1d external
+[[bin]]
+name = "Xe_1e1d_external_T20"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T20_2e1d/dim1/external/Xe_1e1d_external_T20.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "Xe_2e1d_sym_nonint_wf_T20"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T20_2e1d/dim1/sym_nonint_wf2e1d/Xe_2e1d_sym_nonint_wf_T20.rs"
+
+# ============= Xe 2e1d T = 13 fs E = 0.06 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "Xe_2e1d_int_T13"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T13_2e1d/dim1/int_2e1d/Xe_2e1d_int_T13.rs"
+
+# 1e1d inner
+[[bin]]
+name = "Xe_1e1d_inner_T13"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T13_2e1d/dim1/inner/Xe_1e1d_inner_T13.rs"
+
+# 1e1d external
+[[bin]]
+name = "Xe_1e1d_external_T13"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T13_2e1d/dim1/external/Xe_1e1d_external_T13.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "Xe_2e1d_sym_nonint_wf_T13"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T13_2e1d/dim1/sym_nonint_wf2e1d/Xe_2e1d_sym_nonint_wf_T13.rs"
+
+# ============= Xe 2e1d T = 4 fs E = 0.06 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "Xe_2e1d_int_T4"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T4_2e1d/dim1/int_2e1d/Xe_2e1d_int_T4.rs"
+
+# 1e1d inner
+[[bin]]
+name = "Xe_1e1d_inner_T4"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T4_2e1d/dim1/inner/Xe_1e1d_inner_T4.rs"
+
+# 1e1d external
+[[bin]]
+name = "Xe_1e1d_external_T4"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T4_2e1d/dim1/external/Xe_1e1d_external_T4.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "Xe_2e1d_sym_nonint_wf_T4"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T4_2e1d/dim1/sym_nonint_wf2e1d/Xe_2e1d_sym_nonint_wf_T4.rs"
+
+# ============= Xe 2e1d T = 2 fs E = 0.06 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "Xe_2e1d_int_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T2_2e1d/dim1/int_2e1d/Xe_2e1d_int_T2.rs"
+
+# 1e1d inner
+[[bin]]
+name = "Xe_1e1d_inner_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T2_2e1d/dim1/inner/Xe_1e1d_inner_T2.rs"
+
+# 1e1d external
+[[bin]]
+name = "Xe_1e1d_external_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T2_2e1d/dim1/external/Xe_1e1d_external_T2.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "Xe_2e1d_sym_nonint_wf_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/Xe_linear_polarization_T2_2e1d/dim1/sym_nonint_wf2e1d/Xe_2e1d_sym_nonint_wf_T2.rs"
+
+
+# ============= He 2e1d T = 5 fs E = 0.34 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "He_2e1d_int_T5"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T5_2e1d/dim1/int_2e1d/He_2e1d_int_T5.rs"
+
+# 1e1d inner
+[[bin]]
+name = "He_1e1d_inner_T5"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T5_2e1d/dim1/inner/He_1e1d_inner_T5.rs"
+
+# 1e1d external
+[[bin]]
+name = "He_1e1d_external_T5"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T5_2e1d/dim1/external/He_1e1d_external_T5.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "He_2e1d_sym_nonint_wf_T5"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T5_2e1d/dim1/sym_nonint_wf2e1d/He_2e1d_sym_nonint_wf_T5.rs"
+
+# ============= He 2e1d T = 2 fs E = 0.34 for answer to Referee D =====================
+
+# 2e1dint
+[[bin]]
+name = "He_2e1d_int_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T2_2e1d/dim1/int_2e1d/He_2e1d_int_T2.rs"
+
+# 1e1d inner
+[[bin]]
+name = "He_1e1d_inner_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T2_2e1d/dim1/inner/He_1e1d_inner_T2.rs"
+
+# 1e1d external
+[[bin]]
+name = "He_1e1d_external_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T2_2e1d/dim1/external/He_1e1d_external_T2.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "He_2e1d_sym_nonint_wf_T2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T2_2e1d/dim1/sym_nonint_wf2e1d/He_2e1d_sym_nonint_wf_T2.rs"
+
+# ============= He 2e1d T = 0.5 fs E = 0.34 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "He_2e1d_int_T05"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T05_2e1d/dim1/int_2e1d/He_2e1d_int_T05.rs"
+
+# 1e1d inner
+[[bin]]
+name = "He_1e1d_inner_T05"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T05_2e1d/dim1/inner/He_1e1d_inner_T05.rs"
+
+# 1e1d external
+[[bin]]
+name = "He_1e1d_external_T05"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T05_2e1d/dim1/external/He_1e1d_external_T05.rs"
+
+# 2e1d sym nonint
+[[bin]]
+name = "He_2e1d_sym_nonint_wf_T05"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T05_2e1d/dim1/sym_nonint_wf2e1d/He_2e1d_sym_nonint_wf_T05.rs"
+
+# ============= He 2e1d T = 2 fs E = 0.34 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "He_2e1d_int"
+path = "/home/denis/RustSSFM/RSSFM/src/out/He_linear_polarization_T2_2e1d/dim1/int_2e1d/He_2e1d_int.rs"
+
+# ============= br 2e1d dx=0.2 for answer to Referee D =====================
+# 2e1dint
+[[bin]]
+name = "br_2e1d_int_dx02"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_linear_polarization_T2_2e1d/dim1_dx02/int_2e1d/br_2e1d_int_dx02.rs"
+
+# 1e1d inner
+[[bin]]
+name = "br_1e1d_inner_dx02"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_linear_polarization_T2_2e1d/dim1_dx02/inner/br_1e1d_inner_dx02.rs"
+
+# 1e1d excternal
+[[bin]]
+name = "br_1e1d_external_dx02"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_linear_polarization_T2_2e1d/dim1_dx02/external/br_1e1d_external_dx02.rs"
+
+# sym nonint
 
 [[bin]]
-name = "br2e1d_E0035_T13"
-path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=13/br2e1d_E0035_T13.rs"
+name = "br_2e1d_sym_nonint_wf"
+path = "/home/denis/RustSSFM/RSSFM/src/out/br_linear_polarization_T2_2e1d/dim1_dx02/sym_nonint_wf2e1d/br_2e1d_sym_nonint_wf.rs"
+
+# ============= br for pra =====================
+# [[bin]]
+# name = "br2e1d_E0035_T4"
+# path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=4/br2e1d_E0035_T4.rs"
+#
+# [[bin]]
+# name = "br2e1d_E0035_T13"
+# path = "/home/denis/RustSSFM/RSSFM/src/out/br_for_pra/br2e1d_E=0.035_T=13/br2e1d_E0035_T13.rs"
 
 # ============ He 1e2d inner =======================
-[[bin]]
-name = "He_1e2d_inner"
-path = "/home/denis/RustSSFM/RSSFM/src/out/He/1e2d_inner/He_1e2d_inner.rs"
+# [[bin]]
+# name = "He_1e2d_inner"
+# path = "/home/denis/RustSSFM/RSSFM/src/out/He/1e2d_inner/He_1e2d_inner.rs"
 
 #=============== Crank-Nicolson 1d =======================
-[[bin]]
-name = "test_crank_nicolson_1d"
-path = "src/out/crank_nicolson/test_crank_nicolson_1d.rs"
-
-[[bin]]
-name = "CN_br_1e1d_external_ioniz_rate"
-path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_external_rates/CN_br_1e1d_external_ioniz_rate.rs"
-
-[[bin]]
-name = "CN_br_1e1d_inner_ioniz_rate"
-path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_inner_rates/CN_br_1e1d_inner_ioniz_rate.rs"
+# [[bin]]
+# name = "test_crank_nicolson_1d"
+# path = "src/out/crank_nicolson/test_crank_nicolson_1d.rs"
+#
+# [[bin]]
+# name = "CN_br_1e1d_external_ioniz_rate"
+# path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_external_rates/CN_br_1e1d_external_ioniz_rate.rs"
+#
+# [[bin]]
+# name = "CN_br_1e1d_inner_ioniz_rate"
+# path = "src/out/br_ionization_rate/numerical_rates_in_constant_field/CN_inner_rates/CN_br_1e1d_inner_ioniz_rate.rs"
 
 #================ для скоростных уравнений 24 02 26 ====================
-[[bin]]
-name = "br_1e1d_external_RE_T40_E0035"
-path = "src/out/br_ionization_rate/external_T40_E=0.035/br_1e1d_external_RE_T40_E0035.rs"
-
-[[bin]]
-name = "br_1e1d_inner_RE_T40_E0035"
-path = "src/out/br_ionization_rate/inner_T40_E=0.035/br_1e1d_inner_RE_T40_E0035.rs"
+# [[bin]]
+# name = "br_1e1d_external_RE_T40_E0035"
+# path = "src/out/br_ionization_rate/external_T40_E=0.035/br_1e1d_external_RE_T40_E0035.rs"
+#
+# [[bin]]
+# name = "br_1e1d_inner_RE_T40_E0035"
+# path = "src/out/br_ionization_rate/inner_T40_E=0.035/br_1e1d_inner_RE_T40_E0035.rs"
 
 # тестировка
 [[bin]]
@@ -211,6 +409,11 @@ ndarray-linalg = { version = "0.15", features = ["openblas-static"] }
 [[bin]]
 name = "init_state2d"
 path = "src/out/dim2/init_state/init_state2d.rs"
+
+# # начальное состояние 1d
+[[bin]]
+name = "init_state1d"
+path = "src/out/dim1/init_state/init_state1d.rs"
 #
 # # 1e2d ионизация 2d
 # [[bin]]
