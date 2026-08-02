@@ -1,0 +1,63 @@
+# Пример конфига: отрицательный ион Br, 2e1d с взаимодействием, T=2 fs, E=0.035
+# Запуск: cargo run --bin run_2e1d -- --config src/scenarios/params/br_T2_int.toml
+
+[constants]
+au_to_fs = 2.4188843e-2
+T_fs = 2.0
+t_step_fs = 0.1
+
+[grid]
+x0 = [-20.0, -20.0]
+dx = [0.2, 0.2]
+n = [2500, 2500]
+
+[time]
+t0 = 0.0
+dt = "t_step_fs / au_to_fs"
+n_steps = 24
+nt = 100
+
+["external field"]
+pulse_shape = "UnipolarPulse2e1d"
+amplitude = 0.035
+omega = "PI / (T_fs * au_to_fs)"
+x_envelop = 30.0001
+
+["atomic potential"]
+model = "br_2e1d"
+parameters = {}
+
+["absorbing potential"]
+model = "absorbing_potential_2d_asim"
+region = [[-14.0, 470.0], [-14.0, 470.0]]
+alpha = 0.4
+
+["initial state"]
+hdf5_file = "/home/denis/Programs/atoms_and_ions/DATA/br/br2e1d_N2500_dx02_interact.hdf5"
+extend_to_grid = true
+renormalize = true
+
+["ionization probabilities r_surfaces"]
+r_surf = [8.0, 10.0, 15.0, 20.0, 25.0, 30.0]
+
+[output]
+directory = "./out/br_linear_polarization_T2_2e1d/dim1_dx02/int_2e1d"
+save_time_series_grid = true
+save_wavefunctions_hdf5 = true
+save_plots_png = true
+
+# (опционально) временное ФФТ для расчёта основного состояния — раскомментируй при нужде
+# ["time fft"]
+# point = [0.1, -0.1]
+# save_plot = true
+# save_data = true
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0

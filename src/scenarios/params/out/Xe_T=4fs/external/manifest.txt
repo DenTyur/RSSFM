@@ -1,0 +1,57 @@
+[constants]
+t_step_fs = 0.1
+T_fs = 4.0
+au_to_fs = 0.024188843
+
+[grid]
+x0 = [-30.0]
+dx = [0.3]
+n = [1200]
+
+[time]
+t0 = 0.0
+dt = "t_step_fs / au_to_fs/ 40"
+n_steps = 40
+nt = 70
+
+[external field]
+pulse_shape = "UnipolarPulse1D"
+amplitude = 0.06
+omega = "PI / (T_fs / au_to_fs)"
+x_envelop = 30.0001
+
+[atomic potential]
+model = "soft_coulomb_1d"
+
+[atomic potential.parameters]
+a = 1.617
+z = -1.0
+
+[absorbing potential]
+model = "absorbing_potential_1d_asim"
+region = [[
+    -14.0,
+    490.0,
+]]
+alpha = 0.2
+
+[initial state]
+hdf5_file = "/home/denis/Programs/atoms_and_ions/DATA/Xe/Xe_1e1d_N200_dx03_external.hdf5"
+extend_to_grid = true
+renormalize = true
+
+[output]
+directory = "./out/Xe_T=4fs/external"
+save_time_series_grid = true
+save_wavefunctions_hdf5 = true
+save_plots_png = true
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0
+
+[reproducibility]
+git_head = "c9f57c2a534032bd246f526a6ec06902f446571c"
+git_status = "dirty (4 file(s) changed)"
+written_at_unix = 1785692214

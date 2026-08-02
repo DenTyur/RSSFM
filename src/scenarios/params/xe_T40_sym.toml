@@ -1,0 +1,21 @@
+# Пример конфига: Xe, симметризованный невзаимодействующий 2e1d, T=40 fs
+# Запуск: cargo run --bin run_sym2e1d -- --config src/scenarios/params/xe_T40_sym.toml
+# Требует уже рассчитанные волны inner/external (см. их каталоги output.directory).
+# Сетка и временная сетка берутся из .hdf5/.npy волн; отдельные секции не нужны.
+
+[constants]
+au_to_fs = 2.4188843e-2
+
+["ionization probabilities r_surfaces"]
+r_surf = [8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]
+
+[output]
+directory = "./out/Xe_linear_polarization_T40_2e1d/dim1/sym_nonint_wf2e1d"
+save_time_series_grid = false
+save_wavefunctions_hdf5 = true
+save_plots_png = true
+
+["sym noninteracting state"]
+inner_wavefunction_root = "./out/Xe_linear_polarization_T40_2e1d/dim1/inner/out/time_evol/psi_x"
+external_wavefunction_root = "./out/Xe_linear_polarization_T40_2e1d/dim1/external/out/time_evol/psi_x"
+time_grid_path = "./out/Xe_linear_polarization_T40_2e1d/dim1/inner/out/time_evol/t.npy"

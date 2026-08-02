@@ -1,0 +1,61 @@
+# Пример конфига: Xe, внутренний электрон 1e1d, T=40 fs, E=0.06
+# Запуск: cargo run --bin run_1e1d -- --config src/scenarios/params/xe_T40_inner.toml
+# От внешнего обычно отличается только потенциал и начальная волна.
+
+[constants]
+au_to_fs = 2.4188843e-2
+T_fs = 40.0
+t_step_fs = 0.1
+
+[grid]
+x0 = [-30.0]
+dx = [0.3]
+n = [2000]
+
+[time]
+t0 = 0.0
+dt = "t_step_fs / au_to_fs"
+n_steps = 400
+nt = 40
+
+["external field"]
+pulse_shape = "UnipolarPulse1D"
+amplitude = 0.06
+omega = "PI / (T_fs * au_to_fs)"
+x_envelop = 30.0001
+
+["atomic potential"]
+model = "soft_coulomb_1d"
+parameters = { z = -2.0, a = 2.065 }
+
+["absorbing potential"]
+model = "absorbing_potential_1d_asim"
+region = [[-14.0, 490.0]]
+alpha = 0.2
+
+["initial state"]
+hdf5_file = "/home/denis/Programs/atoms_and_ions/DATA/Xe/Xe_1e1d_N200_dx03_inner.hdf5"
+extend_to_grid = true
+renormalize = true
+
+[output]
+directory = "./out/Xe_linear_polarization_T40_2e1d/dim1/inner"
+save_time_series_grid = true
+save_wavefunctions_hdf5 = true
+save_plots_png = true
+
+# (опционально) временное ФФТ для расчёта основного состояния — раскомментируй при нужде
+# ["time fft"]
+# point = [0.0]
+# save_plot = true
+# save_data = true
+# energy_limits = [-40.0, 40.0]
+
+# (опционально) вероятность ионизации 1D по поверхностям x_surf
+# ["ionization probabilities x_surfaces"]
+# x_surf = [8.0, 10.0, 15.0, 20.0]
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0

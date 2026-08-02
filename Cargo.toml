@@ -261,6 +261,22 @@ name = "keldysh_parameter"
 path = "src/bin/keldysh_parameter.rs"
 
 
+# ============= Новые параметризованные расчёты (сценарии из src/scenarios) =============
+# Запуск: cargo run --bin <имя> -- --config src/scenarios/params/<расчёт>.toml
+# Старые расчеты и их [[bin]] остаются без изменений.
+[[bin]]
+name = "run_2e1d"
+path = "src/scenarios/run_2e1d.rs"
+
+[[bin]]
+name = "run_1e1d"
+path = "src/scenarios/run_1e1d.rs"
+
+[[bin]]
+name = "run_sym2e1d"
+path = "src/scenarios/run_sym2e1d.rs"
+
+
 [dependencies]
 ndarray = "0.15"
 ndrustfft = "0.4.0"

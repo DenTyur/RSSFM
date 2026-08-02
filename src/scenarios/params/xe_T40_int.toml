@@ -1,0 +1,67 @@
+# Пример конфига расчёта: Xe, 2e1d с взаимодействием, T=40 fs, E=0.06
+# Запуск:
+#   cargo run --bin run_2e1d -- --config src/scenarios/params/xe_T40_int.toml
+# (запускать из корня проекта, чтобы относительный output.directory был верным)
+# Имена полей повторяют поля структур ядра: Xspace{x0,dx,n}, Tspace{t0,dt,n_steps,nt}.
+
+# Константы доступны как переменные в любом числовом выражении ниже.
+[constants]
+au_to_fs = 2.4188843e-2      # одна атомная единица времени в фемтосекундах
+T_fs = 40.0                  # длительность импульса в фс
+t_step_fs = 0.1              # один временной блок в фс
+
+[grid]
+x0 = [-30.0, -30.0]
+dx = [0.3, 0.3]
+n = [2000, 2000]
+
+[time]
+t0 = 0.0
+dt = "t_step_fs / au_to_fs"      # переводим шаг в атомные единицы времени
+n_steps = 400
+nt = 40
+
+["external field"]
+pulse_shape = "UnipolarPulse2e1d"
+amplitude = 0.06
+omega = "PI / (T_fs * au_to_fs)" # PI / длительность-в-ау
+x_envelop = 30.0001
+
+["atomic potential"]
+model = "soft_coulomb_2e1d_interact" # точное имя функции в rssfm::potentials
+parameters = { z = -2.0, a = 2.065, b = 2.52 }
+
+["absorbing potential"]
+model = "absorbing_potential_2d_asim"
+region = [[-14.0, 470.0], [-14.0, 470.0]]
+alpha = 0.4
+
+["initial state"]
+hdf5_file = "/home/denis/Programs/atoms_and_ions/DATA/Xe/Xe_2e1d_N200_dx03_interact.hdf5"
+extend_to_grid = true
+renormalize = true
+
+["ionization probabilities r_surfaces"]
+r_surf = [8.0, 10.0, 15.0, 20.0, 25.0, 30.0, 35.0, 40.0]
+
+[output]
+directory = "./out/Xe_linear_polarization_T40_2e1d/dim1/int_2e1d"
+save_time_series_grid = true
+save_wavefunctions_hdf5 = true
+save_plots_png = true
+
+# (опционально) временное ФФТ для расчёта основного состояния — раскомментируй при нужде
+# ["time fft"]
+# point = [0.1, -0.1]
+# save_plot = true
+# save_data = true
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0

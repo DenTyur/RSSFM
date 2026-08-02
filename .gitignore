@@ -6,6 +6,7 @@
 /src/server
 /src/arrays_saved
 /src/push_git.sh
+/src/calculations
 push_git.sh
 Cargo.lock
 .gitignore

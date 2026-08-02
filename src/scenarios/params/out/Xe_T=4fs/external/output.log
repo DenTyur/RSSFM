@@ -1,0 +1,210 @@
+STEP 0/70, t.current=0.00000, norm = 1, prob_in_box = 1
+SSFM: 0.089
+time_step = 0.096, total_time = 0.096
+STEP 1/70, t.current=4.13414, norm = 1.0000005, prob_in_box = 1.000001
+SSFM: 0.027
+time_step = 0.033, total_time = 0.128
+STEP 2/70, t.current=8.26828, norm = 1.0000013, prob_in_box = 1.0000026
+SSFM: 0.029
+time_step = 0.034, total_time = 0.163
+STEP 3/70, t.current=12.40242, norm = 1.0000015, prob_in_box = 1.0000032
+SSFM: 0.031
+time_step = 0.037, total_time = 0.199
+STEP 4/70, t.current=16.53656, norm = 1.0000021, prob_in_box = 1.0000044
+SSFM: 0.031
+time_step = 0.036, total_time = 0.236
+STEP 5/70, t.current=20.67070, norm = 1.0000026, prob_in_box = 1.0000052
+SSFM: 0.030
+time_step = 0.035, total_time = 0.271
+STEP 6/70, t.current=24.80484, norm = 1.000003, prob_in_box = 1.0000061
+SSFM: 0.030
+time_step = 0.037, total_time = 0.308
+STEP 7/70, t.current=28.93898, norm = 1.0000035, prob_in_box = 1.0000069
+SSFM: 0.034
+time_step = 0.040, total_time = 0.348
+STEP 8/70, t.current=33.07310, norm = 1.0000038, prob_in_box = 1.0000076
+SSFM: 0.030
+time_step = 0.036, total_time = 0.383
+STEP 9/70, t.current=37.20716, norm = 1.0000044, prob_in_box = 1.0000088
+SSFM: 0.029
+time_step = 0.035, total_time = 0.418
+STEP 10/70, t.current=41.34122, norm = 1.0000049, prob_in_box = 1.0000098
+SSFM: 0.030
+time_step = 0.036, total_time = 0.454
+STEP 11/70, t.current=45.47529, norm = 1.0000055, prob_in_box = 1.0000111
+SSFM: 0.031
+time_step = 0.036, total_time = 0.490
+STEP 12/70, t.current=49.60935, norm = 1.0000061, prob_in_box = 1.0000123
+SSFM: 0.030
+time_step = 0.035, total_time = 0.525
+STEP 13/70, t.current=53.74342, norm = 1.0000068, prob_in_box = 1.0000137
+SSFM: 0.028
+time_step = 0.034, total_time = 0.560
+STEP 14/70, t.current=57.87748, norm = 1.0000075, prob_in_box = 1.0000151
+SSFM: 0.029
+time_step = 0.034, total_time = 0.594
+STEP 15/70, t.current=62.01154, norm = 1.0000082, prob_in_box = 1.0000166
+SSFM: 0.029
+time_step = 0.034, total_time = 0.628
+STEP 16/70, t.current=66.14568, norm = 1.000009, prob_in_box = 1.000018
+SSFM: 0.028
+time_step = 0.034, total_time = 0.663
+STEP 17/70, t.current=70.27990, norm = 1.0000097, prob_in_box = 1.0000193
+SSFM: 0.029
+time_step = 0.034, total_time = 0.697
+STEP 18/70, t.current=74.41412, norm = 1.0000106, prob_in_box = 1.0000212
+SSFM: 0.029
+time_step = 0.035, total_time = 0.732
+STEP 19/70, t.current=78.54833, norm = 1.0000114, prob_in_box = 1.000023
+SSFM: 0.028
+time_step = 0.034, total_time = 0.766
+STEP 20/70, t.current=82.68255, norm = 1.0000124, prob_in_box = 1.0000248
+SSFM: 0.028
+time_step = 0.034, total_time = 0.800
+STEP 21/70, t.current=86.81676, norm = 1.0000132, prob_in_box = 1.0000266
+SSFM: 0.031
+time_step = 0.037, total_time = 0.837
+STEP 22/70, t.current=90.95098, norm = 1.0000141, prob_in_box = 1.0000283
+SSFM: 0.034
+time_step = 0.040, total_time = 0.877
+STEP 23/70, t.current=95.08520, norm = 1.0000151, prob_in_box = 1.0000303
+SSFM: 0.030
+time_step = 0.035, total_time = 0.912
+STEP 24/70, t.current=99.21941, norm = 1.0000161, prob_in_box = 1.0000322
+SSFM: 0.030
+time_step = 0.035, total_time = 0.947
+STEP 25/70, t.current=103.35363, norm = 1.000017, prob_in_box = 1.0000341
+SSFM: 0.029
+time_step = 0.035, total_time = 0.982
+STEP 26/70, t.current=107.48785, norm = 1.000018, prob_in_box = 1.0000361
+SSFM: 0.029
+time_step = 0.035, total_time = 1.017
+STEP 27/70, t.current=111.62206, norm = 1.000019, prob_in_box = 1.0000379
+SSFM: 0.030
+time_step = 0.036, total_time = 1.053
+STEP 28/70, t.current=115.75628, norm = 1.0000198, prob_in_box = 1.0000397
+SSFM: 0.030
+time_step = 0.035, total_time = 1.088
+STEP 29/70, t.current=119.89050, norm = 1.0000206, prob_in_box = 1.0000414
+SSFM: 0.030
+time_step = 0.035, total_time = 1.124
+STEP 30/70, t.current=124.02471, norm = 1.0000215, prob_in_box = 1.000043
+SSFM: 0.030
+time_step = 0.036, total_time = 1.160
+STEP 31/70, t.current=128.15892, norm = 1.0000223, prob_in_box = 1.0000446
+SSFM: 0.030
+time_step = 0.036, total_time = 1.195
+STEP 32/70, t.current=132.29283, norm = 1.000023, prob_in_box = 1.000046
+SSFM: 0.031
+time_step = 0.036, total_time = 1.232
+STEP 33/70, t.current=136.42674, norm = 1.0000238, prob_in_box = 1.0000477
+SSFM: 0.031
+time_step = 0.036, total_time = 1.268
+STEP 34/70, t.current=140.56065, norm = 1.0000247, prob_in_box = 1.0000495
+SSFM: 0.029
+time_step = 0.035, total_time = 1.303
+STEP 35/70, t.current=144.69456, norm = 1.0000255, prob_in_box = 1.0000511
+SSFM: 0.030
+time_step = 0.036, total_time = 1.339
+STEP 36/70, t.current=148.82848, norm = 1.0000266, prob_in_box = 1.0000532
+SSFM: 0.029
+time_step = 0.035, total_time = 1.374
+STEP 37/70, t.current=152.96239, norm = 1.0000274, prob_in_box = 1.0000548
+SSFM: 0.028
+time_step = 0.035, total_time = 1.408
+STEP 38/70, t.current=157.09630, norm = 1.0000284, prob_in_box = 1.0000569
+SSFM: 0.029
+time_step = 0.035, total_time = 1.443
+STEP 39/70, t.current=161.23021, norm = 1.0000294, prob_in_box = 1.000059
+SSFM: 0.029
+time_step = 0.035, total_time = 1.478
+STEP 40/70, t.current=165.36412, norm = 1.0000304, prob_in_box = 1.0000608
+SSFM: 0.030
+time_step = 0.035, total_time = 1.513
+STEP 41/70, t.current=169.49803, norm = 1.0000315, prob_in_box = 1.000063
+SSFM: 0.032
+time_step = 0.038, total_time = 1.551
+STEP 42/70, t.current=173.63194, norm = 1.0000322, prob_in_box = 1.0000645
+SSFM: 0.031
+time_step = 0.037, total_time = 1.588
+STEP 43/70, t.current=177.76585, norm = 1.0000333, prob_in_box = 1.0000665
+SSFM: 0.029
+time_step = 0.035, total_time = 1.623
+STEP 44/70, t.current=181.89977, norm = 1.0000342, prob_in_box = 1.0000684
+SSFM: 0.028
+time_step = 0.034, total_time = 1.657
+STEP 45/70, t.current=186.03368, norm = 1.000035, prob_in_box = 1.0000701
+SSFM: 0.029
+time_step = 0.035, total_time = 1.692
+STEP 46/70, t.current=190.16759, norm = 1.0000354, prob_in_box = 1.0000709
+SSFM: 0.028
+time_step = 0.034, total_time = 1.726
+STEP 47/70, t.current=194.30150, norm = 1.0000355, prob_in_box = 1.0000712
+SSFM: 0.029
+time_step = 0.034, total_time = 1.760
+STEP 48/70, t.current=198.43541, norm = 1.0000355, prob_in_box = 1.0000712
+SSFM: 0.030
+time_step = 0.036, total_time = 1.796
+STEP 49/70, t.current=202.56932, norm = 1.000035, prob_in_box = 1.0000702
+SSFM: 0.029
+time_step = 0.035, total_time = 1.831
+STEP 50/70, t.current=206.70323, norm = 1.0000341, prob_in_box = 1.0000683
+SSFM: 0.030
+time_step = 0.036, total_time = 1.866
+STEP 51/70, t.current=210.83714, norm = 1.0000329, prob_in_box = 1.0000659
+SSFM: 0.031
+time_step = 0.036, total_time = 1.903
+STEP 52/70, t.current=214.97105, norm = 1.0000309, prob_in_box = 1.0000619
+SSFM: 0.031
+time_step = 0.037, total_time = 1.940
+STEP 53/70, t.current=219.10497, norm = 1.0000286, prob_in_box = 1.0000572
+SSFM: 0.032
+time_step = 0.038, total_time = 1.978
+STEP 54/70, t.current=223.23888, norm = 1.0000257, prob_in_box = 1.0000516
+SSFM: 0.029
+time_step = 0.035, total_time = 2.013
+STEP 55/70, t.current=227.37279, norm = 1.0000222, prob_in_box = 1.0000445
+SSFM: 0.030
+time_step = 0.035, total_time = 2.048
+STEP 56/70, t.current=231.50670, norm = 1.0000179, prob_in_box = 1.0000358
+SSFM: 0.029
+time_step = 0.034, total_time = 2.083
+STEP 57/70, t.current=235.64061, norm = 1.0000125, prob_in_box = 1.000025
+SSFM: 0.031
+time_step = 0.036, total_time = 2.119
+STEP 58/70, t.current=239.77452, norm = 1.0000061, prob_in_box = 1.0000123
+SSFM: 0.030
+time_step = 0.036, total_time = 2.155
+STEP 59/70, t.current=243.90843, norm = 0.9999987, prob_in_box = 0.99999744
+SSFM: 0.030
+time_step = 0.036, total_time = 2.191
+STEP 60/70, t.current=248.04234, norm = 0.99999034, prob_in_box = 0.99998075
+SSFM: 0.031
+time_step = 0.036, total_time = 2.228
+STEP 61/70, t.current=252.17625, norm = 0.9999812, prob_in_box = 0.9999625
+SSFM: 0.035
+time_step = 0.041, total_time = 2.268
+STEP 62/70, t.current=256.31021, norm = 0.9999715, prob_in_box = 0.9999431
+SSFM: 0.035
+time_step = 0.041, total_time = 2.309
+STEP 63/70, t.current=260.44473, norm = 0.9999617, prob_in_box = 0.99992335
+SSFM: 0.031
+time_step = 0.037, total_time = 2.346
+STEP 64/70, t.current=264.57925, norm = 0.9999514, prob_in_box = 0.9999029
+SSFM: 0.030
+time_step = 0.036, total_time = 2.382
+STEP 65/70, t.current=268.71378, norm = 0.99994135, prob_in_box = 0.99988276
+SSFM: 0.032
+time_step = 0.039, total_time = 2.420
+STEP 66/70, t.current=272.84830, norm = 0.99993134, prob_in_box = 0.99986273
+SSFM: 0.029
+time_step = 0.035, total_time = 2.455
+STEP 67/70, t.current=276.98282, norm = 0.9999215, prob_in_box = 0.999843
+SSFM: 0.031
+time_step = 0.037, total_time = 2.492
+STEP 68/70, t.current=281.11734, norm = 0.9999115, prob_in_box = 0.999823
+SSFM: 0.030
+time_step = 0.036, total_time = 2.528
+STEP 69/70, t.current=285.25186, norm = 0.9999014, prob_in_box = 0.9998028
+SSFM: 0.028
+time_step = 0.034, total_time = 2.562
