@@ -11,17 +11,18 @@ mod potential;
 
 use config::Config;
 use rssfm::common::{particle::Particle, tspace::Tspace};
-use rssfm::config::{F, PI};
+use rssfm::config::{C, F, PI};
 use rssfm::dim1::{
-    field::UnipolarPulse1D,
+    field::ConstantField1D,
     gauge::LenthGauge1D,
-    ioniz_prob::IonizProb1D,
+    ioniz_prob::{IonizProb1D, ProjectionProb1D},
     space::Xspace1D,
     ssfm::SSFM1D,
     time_fft::TimeFFT,
     wave_function::WaveFunction1D,
 };
 use rssfm::traits::{
+    field::Field,
     flow::{Flux, SurfaceFlow},
     space::Space,
     ssfm::SSFM,
@@ -70,8 +71,10 @@ fn main() {
 
     let ap = cfg.resolve_parameters();
     let atomic_potential = potential::atomic_1d(cfg.atomic_model(), ap);
-    let ab = cfg.resolve_abs();
-    let absorbing_potential = potential::absorbing_1d(ab.model, ab.alpha as F, ab.region, ab.radius);
+    let absorbing_potential: Box<dyn Fn([F; 1]) -> C + Send + Sync> = match cfg.resolve_abs() {
+        Some(ab) => Box::new(potential::absorbing_1d(ab.model, ab.alpha as F, ab.region, ab.radius)),
+        None => Box::new(|_: [F; 1]| C::new(0.0, 0.0)),
+    };
 
     let fr = cfg.resolve_field();
     let field = field1d(&fr.pulse_shape, fr.amplitude as F, fr.omega as F, fr.x_envelop as F);
@@ -84,6 +87,13 @@ fn main() {
         .collect();
 
     let mut ssfm = SSFM1D::new(&particles, &gauge, &psi.x, atomic_potential, absorbing_potential);
+
+    // (опционально) вероятность выживания |<psi0|psi(t)>|^2 — ProjectionProb1D
+    let mut survival = cfg
+        .survival
+        .as_ref()
+        .map(|s| ProjectionProb1D::new(&psi.clone(), fr.amplitude as F));
+
 
     // (опционально) временное Фурье-преобразование — для расчёта основного состояния
     let mut time_fft = cfg.time_fft().map(|tf| {
@@ -112,6 +122,9 @@ fn main() {
             );
         });
         position_processing(&cfg, &psi, &t, i);
+        if let Some(sv) = &mut survival {
+            sv.add(&psi, t.current);
+        }
         if let Some(ip) = &mut ioniz_prob {
             ip.add(&psi);
         }
@@ -124,6 +137,11 @@ fn main() {
             time_step.elapsed().as_secs_f32(),
             total_time.elapsed().as_secs_f32()
         )
+    }
+
+    // (опционально) вероятность выживания — график и данные
+    if let Some(sv) = survival {
+        sv.save_as_hdf5(format!("{out}/survival_prob.hdf5").as_str());
     }
 
     // (опционально) вероятность ионизации — график и данные
@@ -167,9 +185,45 @@ fn position_processing(cfg: &Config, psi: &WaveFunction1D, t: &Tspace, i_step: u
     }
 }
 
-fn field1d(pulse_shape: &str, amplitude: F, omega: F, x_envelop: F) -> UnipolarPulse1D {
+/// Поле, выбираемое по имени формы (одно из семейства Field<1>).
+enum Field1D {
+    Constant(ConstantField1D),
+    Unipolar(rssfm::dim1::field::UnipolarPulse1D),
+}
+
+impl Field<1> for Field1D {
+    fn scalar_potential(&self, x: [F; 1], t: F) -> F {
+        match self {
+            Field1D::Constant(f) => f.scalar_potential(x, t),
+            Field1D::Unipolar(f) => f.scalar_potential(x, t),
+        }
+    }
+    fn vector_potential(&self, t: F) -> [F; 1] {
+        match self {
+            Field1D::Constant(f) => f.vector_potential(t),
+            Field1D::Unipolar(f) => f.vector_potential(t),
+        }
+    }
+    fn a(&self, t: F) -> [F; 1] {
+        match self {
+            Field1D::Constant(f) => f.a(t),
+            Field1D::Unipolar(f) => f.a(t),
+        }
+    }
+    fn b(&self, t: F) -> F {
+        match self {
+            Field1D::Constant(f) => f.b(t),
+            Field1D::Unipolar(f) => f.b(t),
+        }
+    }
+}
+
+fn field1d(pulse_shape: &str, amplitude: F, omega: F, x_envelop: F) -> Field1D {
     match pulse_shape {
-        "UnipolarPulse1D" => UnipolarPulse1D::new(amplitude, omega, x_envelop),
+        "ConstantField1D" => Field1D::Constant(ConstantField1D::new(amplitude)),
+        "UnipolarPulse1D" => {
+            Field1D::Unipolar(rssfm::dim1::field::UnipolarPulse1D::new(amplitude, omega, x_envelop))
+        }
         other => panic!("неизвестная форма поля 1d: {other}"),
     }
 }

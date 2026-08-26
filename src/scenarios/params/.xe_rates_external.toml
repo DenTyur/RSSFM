@@ -1,0 +1,60 @@
+# Xe, внешний электрон 1e1d, скорость ионизации в ПОСТОЯННОМ поле.
+# Скрипт-обёртка: rates/run_external.sh правит amplitude/сетку/каталог для каждого E.
+# Запуск: cargo run --bin run_1e1d -- --config src/scenarios/params/xe_rates_external.toml
+
+[constants]
+au_to_fs = 2.4188843e-2
+T_fs = 4.0
+t_step_fs = 0.1
+
+# Сетка: широкая (волновая функция до границы не доходит), поглотитель НЕ используется.
+[grid]
+x0 = [-90.0]
+dx = [0.3]
+n = [7000]
+
+[time]
+t0 = 0.0
+dt = "t_step_fs / au_to_fs / 24"
+n_steps = 24
+nt = 1200
+
+["external field"]
+pulse_shape = "ConstantField1D"
+amplitude = 0.050
+omega = "0.0"
+x_envelop = "30.0001"
+
+["atomic potential"]
+model = "soft_coulomb_1d"
+parameters = { z = -1.0, a = 1.617 }
+
+# Поглощающий слой: слабый (alpha=0.01) на участке вблизи ядра, как в br workflow.
+# Для ПОСТОЯННОГО поля он необходим: ускоряемый полем ионизованный электрон за время
+# эволюции уходит далеко за сетку и оборачивается периодическим FFT-граничным условием
+# (назад к ядру), что портит спад |<psi0|psi(t)>|^2. Слабый поглотитель гасит этот уход.
+["absorbing potential"]
+model = "absorbing_potential_1d_asim"
+region = [[-90.0, 450.0]]
+alpha = 0.01
+
+["initial state"]
+hdf5_file = "/home/denis/Programs/atoms_and_ions/DATA/Xe/Xe_1e1d_N200_dx03_external.hdf5"
+extend_to_grid = true
+renormalize = true
+
+[output]
+directory = "/home/denis/RustSSFM/RSSFM/src/calculations/Xe_1d/rates/external_rates/run_E=0.050"
+save_time_series_grid = false
+save_wavefunctions_hdf5 = false
+save_plots_png = false
+
+# Вероятность выживания |<psi0|psi(t)>|^2 — из неё ds.py извлекает w(E)
+["survival probability"]
+save_plot = false
+save_data = true
+
+[[particles]]
+dim = 1
+mass = 1.0
+charge = -1.0

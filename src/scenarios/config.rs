@@ -101,6 +101,8 @@ pub struct Config {
     pub ioniz: Option<IonCfg>,
     #[serde(rename = "ionization probabilities x_surfaces", default)]
     pub ioniz_x: Option<IonXSurfCfg>,
+    #[serde(rename = "survival probability", default)]
+    pub survival: Option<SurvivalCfg>,
     #[serde(rename = "time fft", default)]
     pub time_fft: Option<TimeFftCfg>,
     pub output: Option<OutputCfg>,
@@ -179,6 +181,15 @@ pub struct IonCfg {
 pub struct IonXSurfCfg {
     /// x_surf: Vec<F> — координаты поверхностей (имя как в структуре IonizProb1D)
     pub x_surf: Vec<NumOrExpr>,
+}
+
+// --- ["survival probability"] -> отслеживание |<psi0|psi(t)>|^2 (ProjectionProb1D) ---
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct SurvivalCfg {
+    #[serde(default = "default_true")]
+    pub save_plot: bool,
+    #[serde(default = "default_true")]
+    pub save_data: bool,
 }
 
 // --- ["time fft"]: TimeFFT (временное Фурье-преобразование для основного состояния) ---
@@ -332,15 +343,16 @@ impl Config {
             .clone()
     }
 
-    pub fn resolve_abs(&self) -> AbsRes {
-        let a = Self::need(self.absorbing_potential.as_ref(), "[\"absorbing potential\"]");
+    /// Поглощающий потенциал. Возвращает None, если секция ["absorbing potential"] отсутствует.
+    pub fn resolve_abs(&self) -> Option<AbsRes> {
+        let a = self.absorbing_potential.as_ref()?;
         let ctx = &self.constants;
-        AbsRes {
+        Some(AbsRes {
             model: a.model.clone(),
             region: a.region.iter().map(|r| [r[0].eval(ctx), r[1].eval(ctx)]).collect(),
             alpha: a.alpha.eval(ctx),
             radius: a.radius_absorber.as_ref().map(|v| v.eval(ctx)),
-        }
+        })
     }
 
     pub fn resolve_r_surf(&self) -> Vec<f64> {

@@ -11,6 +11,11 @@ rustdoc-args = ["--html-in-header", "katex-header.html"]
 name = "rssfm"
 path = "src/lib.rs"
 
+# ======== Дополнительный фаул, удалить ========
+[[bin]]
+name = "init_state2d_2"
+path = "/home/denis/RustSSFM/RSSFM/src/out/dim2/init_state_2/init_state2d_2.rs"
+
 # ============= Xe 2e1d T = 40 fs E = 0.06 for answer to Referee D =====================
 # 2e1dint
 [[bin]]
@@ -302,6 +307,8 @@ ndarray-linalg = { version = "0.15", features = ["openblas-static"] }
 # [[bin]]
 # name = "br_1e1d_external_ioniz_rate"
 # path = "src/out/br_ionization_rate/external/br_1e1d_external_ioniz_rate.rs"
+
+
 # #========== Тест purity ===============
 # [[bin]]
 # name = "br_2e1d_purity"

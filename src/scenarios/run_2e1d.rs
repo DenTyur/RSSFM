@@ -11,7 +11,7 @@ mod potential;
 
 use config::Config;
 use rssfm::common::{particle::Particle, tspace::Tspace};
-use rssfm::config::{F, PI};
+use rssfm::config::{C, F, PI};
 use rssfm::dim2::{
     field::UnipolarPulse2e1d,
     fft_maker::FftMaker2D,
@@ -79,7 +79,10 @@ fn main() {
     let ap = cfg.resolve_parameters();
     let atomic_potential = potential::atomic_2d(cfg.atomic_model(), ap);
     let ab = cfg.resolve_abs();
-    let absorbing_potential = potential::absorbing_2d(ab.model, ab.alpha as F, ab.region, ab.radius);
+    let absorbing_potential: Box<dyn Fn([F; 2]) -> C + Send + Sync> = match cfg.resolve_abs() {
+        Some(ab) => Box::new(potential::absorbing_2d(ab.model, ab.alpha as F, ab.region, ab.radius)),
+        None => Box::new(|_: [F; 2]| C::new(0.0, 0.0)),
+    };
 
     // поле
     let fr = cfg.resolve_field();
