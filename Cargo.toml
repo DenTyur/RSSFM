@@ -302,6 +302,9 @@ clap = "4.5.48"
 
 
 ndarray-linalg = { version = "0.15", features = ["openblas-static"] }
+openblas-src = { version = "0.10.16", default-features = false, features = [
+  "rustls",
+] }
 
 
 # [[bin]]
